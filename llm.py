@@ -1,13 +1,17 @@
-# llm.py
-
 import ollama
+from helper import load_config
 
-def request(prompt: str, model_name: str = "llama3.1:8b") -> str:
+def request(prompt: str, model_name: str = None) -> str:
 
     try:
         response = ollama.chat(
-            model=model_name,
-            messages=[{"role": "user", "content": prompt}]
+            model=load_config('model'),
+            messages=[
+                    {
+                    "role": "user",
+                    "content": prompt
+                    }
+            ]
         )
         return response["message"]["content"].strip()
     except Exception as e:

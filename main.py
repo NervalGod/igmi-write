@@ -2,74 +2,137 @@
 
 from parser import parse
 from llm import request
-import json
+from helper import load_config
 
-def extract_fill_requests(structure: list) -> list:
-    requests = []
 
-    for idx, block in enumerate(structure):
-        if block["type"] == "paragraph":
-            text = block["text"]
-            if "<Заполнить>" in text:
-                requests.append({
-                    "type": "paragraph",
-                    "index": idx,
-                    "context": text
-                })
+def table_to_columns(table_data):
+    """Преобразует таблицу (список строк) в список столбцов"""
+    if not table_data or not table_data[0]:
+        return []
+    num_cols = len(table_data[0])
+    num_rows = len(table_data)
+    columns = []
+    for col_idx in range(num_cols):
+        column = []
+        for row_idx in range(num_rows):
+            cell = table_data[row_idx][col_idx].strip() if col_idx < len(table_data[row_idx]) else ""
+            column.append(cell)
+        columns.append(column)
+    return columns
 
-        elif block["type"] == "table":
-            data = block["data"]
-            for row_idx, row in enumerate(data):
-                for col_idx, cell in enumerate(row):
-                    if "<Заполнить>" in cell:
-                        requests.append({
-                            "type": "table",
-                            "table_index": idx,
-                            "row": row_idx,
-                            "col": col_idx,
-                            "context": cell
-                        })
 
-    return requests
+def extract_tables_with_metadata(structure: list):
+    """Извлекает таблицы с именами (из предшествующего параграфа 'Таблица ...')"""
+    tables = []
+    current_name = None
 
-def build_source_text(structure: list) -> str:
-    parts = []
     for block in structure:
         if block["type"] == "paragraph":
-            parts.append(block["text"])
-        elif block["type"] == "table":
-            for row in block["data"]:
-                parts.append(" | ".join(row))
-    return "\n".join(parts)
+            if "таблица" in block["text"].lower():
+                current_name = block["text"].strip()
+
+        elif block["type"] == "table" and block["data"]:
+            tables.append({
+                "name": current_name or "Без названия",
+                "data": block["data"]
+            })
+            current_name = None  # сбрасываем после таблицы
+
+    return tables
+
+
+def format_table_for_prompt(table_dict: dict, include_data: bool = True) -> str:
+    """Форматирует одну таблицу как набор столбцов"""
+    lines = [f"📌 Таблица: {table_dict['name']}"]
+
+    if not table_dict["data"]:
+        return "\n".join(lines)
+
+    columns = table_to_columns(table_dict["data"])
+
+    for col_idx, col in enumerate(columns):
+        lines.append(f"  Столбец {col_idx + 1}:")
+        for row_idx, cell in enumerate(col):
+            lines.append(f"    Строка {row_idx + 1}: {cell}")
+
+    return "\n".join(lines)
+
+
+def format_source_for_llm(source_tables: list) -> str:
+    """Форматирует все таблицы источника как набор 'Таблица → Столбцы'"""
+    return "\n\n".join(format_table_for_prompt(tbl) for tbl in source_tables)
+
+
+def extract_columns_to_fill(template_tables: list):
+    """Извлекает столбцы, содержащие <>, с полным контекстом"""
+    columns_to_fill = []
+
+    for tbl in template_tables:
+        columns = table_to_columns(tbl["data"])
+        for col_idx, col in enumerate(columns):
+            if any("<>" in cell for cell in col):
+                columns_to_fill.append({
+                    "table_name": tbl["name"],
+                    "column_index": col_idx,
+                    "column": col  # вся колонка целиком
+                })
+
+    return columns_to_fill
+
 
 def main():
-    source_structure = parse("test.docx")        # откуда брать данные
-    template_structure = parse("test2.docx")     # куда вставлять
+    source_structure = parse(load_config('source_path'))
+    template_structure = parse(load_config('template_path'))
 
-    source_text = build_source_text(source_structure)
-    fill_requests = extract_fill_requests(template_structure)
+    source_tables = extract_tables_with_metadata(source_structure)
+    template_tables = extract_tables_with_metadata(template_structure)
 
-    print("test.docx:")
+    columns_to_fill = extract_columns_to_fill(template_tables)
+    source_text = format_source_for_llm(source_tables)
+
+    print("📚 ФОРМАТ ДЛЯ LLM (ИСТОЧНИК):")
     print(source_text)
+    print("\n" + "="*80)
 
     results = []
 
-    for req in fill_requests:
-        context = req["context"]
+    for col_req in columns_to_fill:
+        table_name = col_req["table_name"]
+        column = col_req["column"]
+        col_idx = col_req["column_index"]
+
+        # Форматируем целевой столбец
+        column_lines = "\n".join(f"    Строка {i+1}: {cell}" for i, cell in enumerate(column))
 
         prompt = f"""
-Прочитай следующие данные:
-"{source_text}"
-Исходя из прочитанных данных, найди наиболее высокое совпадение по смыслу или контексту и замени <Заполнить> на эту фразу в следующем предложении:
-"{context}"
-Твой ответ должен содержать только фразу на заполнение, без каких-либо пояснений, причем соотвествовать нормам русского языка (правильное склонение, падеж и так далее) 
-"""
+            Просмотри следующие данные таблиц:
+            {source_text}
+            
+            Ты должен найти исходя из предоставленных данных таблицу, которая соответствует следующей таблице с названием: {table_name}
+            и столбцом: 
+            {column_lines}
+            Опираясь на название, количество незаполненных строк столбца найди подходящие на место <> значения и напиши в ответ данные через запятую, которые надо заполнить 
+            Никакие примечания, пояснения и прочего лишнего отвечать не нужно. Если нумерация таблиц не совпадает - это нормально."""
 
-        print(f"\nФраза на обработку: {context}")
-        replacement = request(prompt)
-        print(f"Ответ llm: {replacement}")
+        print(f"\n🔍 Заполняем: таблица '{table_name}', столбец {col_idx+1}")
+        print("Целевой столбец:")
+        for i, cell in enumerate(column):
+            print(f"  Строка {i+1}: {cell}")
 
-        results.append({**req, "replacement": replacement})
+        response = request(prompt)
+        print(f"🎯 Ответ LLM:\n{response}")
+
+        results.append({
+            **col_req,
+            "filled_column": response
+        })
+
+    print("\n" + "="*80)
+    print("📋 РЕЗУЛЬТАТЫ:")
+    for res in results:
+        print(f"  Таблица: '{res['table_name']}', Столбец {res['column_index']+1}")
+        print(f"  {res['filled_column']}\n")
 
 if __name__ == "__main__":
     main()
+    
