@@ -1,138 +1,264 @@
 # main.py
 
+import yaml
+import docx
+from typing import List, Dict, Any
+from helper import load_config
 from parser import parse
 from llm import request
-from helper import load_config
+import logging
+from datetime import datetime
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler("generation.log", encoding="utf-8"),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
-def table_to_columns(table_data):
-    """Преобразует таблицу (список строк) в список столбцов"""
-    if not table_data or not table_data[0]:
-        return []
-    num_cols = len(table_data[0])
-    num_rows = len(table_data)
-    columns = []
-    for col_idx in range(num_cols):
-        column = []
-        for row_idx in range(num_rows):
-            cell = table_data[row_idx][col_idx].strip() if col_idx < len(table_data[row_idx]) else ""
-            column.append(cell)
-        columns.append(column)
-    return columns
+def table_to_structured_data(table_block: Dict) -> Dict:
+    """Возвращает данные таблицы, считает число ПУСТЫХ ячеек (не только <>)"""
+    data = table_block["data"]
+    if not data:
+        return {"rows": [], "empty_count": 0}
 
+    empty_count = 0
+    rows = []
+    for i, row in enumerate(data):
+        formatted_cells = []
+        for cell in row:
+            stripped = cell.strip()
+            formatted_cells.append(stripped)
+            # Считаем пустые или почти пусткие ячейки
+            if not stripped or stripped == "":
+                empty_count += 1
+        rows.append(f"  Строка {i+1}: {', '.join(formatted_cells)}")
 
-def extract_tables_with_metadata(structure: list):
-    """Извлекает таблицы с именами (из предшествующего параграфа 'Таблица ...')"""
-    tables = []
-    current_name = None
+    return {
+        "rows": rows,
+        "empty_count": empty_count
+    }
 
-    for block in structure:
-        if block["type"] == "paragraph":
-            if "таблица" in block["text"].lower():
-                current_name = block["text"].strip()
-
-        elif block["type"] == "table" and block["data"]:
-            tables.append({
-                "name": current_name or "Без названия",
-                "data": block["data"]
-            })
-            current_name = None  # сбрасываем после таблицы
-
-    return tables
-
-
-def format_table_for_prompt(table_dict: dict, include_data: bool = True) -> str:
-    """Форматирует одну таблицу как набор столбцов"""
-    lines = [f"📌 Таблица: {table_dict['name']}"]
-
-    if not table_dict["data"]:
-        return "\n".join(lines)
-
-    columns = table_to_columns(table_dict["data"])
-
-    for col_idx, col in enumerate(columns):
-        lines.append(f"  Столбец {col_idx + 1}:")
-        for row_idx, cell in enumerate(col):
-            lines.append(f"    Строка {row_idx + 1}: {cell}")
-
+def format_source_tables(source_tables: List[Dict]) -> str:
+    """Форматирует ВСЕ исходные таблицы — по строкам, как есть"""
+    lines = ["ИСХОДНЫЕ ТАБЛИЦЫ:"]
+    for tbl in source_tables:
+        lines.append(f"– {tbl['name']}")
+        structured = table_to_structured_data(tbl)
+        lines.extend(structured["rows"])
     return "\n".join(lines)
 
+def format_target_table(template_table: Dict) -> str:
+    """Форматирует целевую таблицу — название, строки, число пустых"""
+    structured = table_to_structured_data(template_table)
+    lines = [
+        f"Название: {template_table['name']}",
+        "СТРОКИ:"
+    ]
+    lines.extend(structured["rows"])
+    lines.append(f"ПУСТО: {structured['empty_count']}")
+    return "\n".join(lines)
 
-def format_source_for_llm(source_tables: list) -> str:
-    """Форматирует все таблицы источника как набор 'Таблица → Столбцы'"""
-    return "\n\n".join(format_table_for_prompt(tbl) for tbl in source_tables)
+def fill_table_data(table_data: List[List[str]], values: List[str]) -> None:
+    """
+    Заполняет ПУСТЫЕ ячейки (пустые строки или содержащие только пробелы/•) значениями.
+    Обход: по строкам сверху вниз, слева направо.
+    """
+    value_index = 0
+    for row in table_data:
+        for j in range(len(row)):
+            stripped = row[j].strip()
+            if not stripped or stripped == "":  # Можно добавить другие маркеры
+                if value_index < len(values):
+                    # Вставляем значение, сохраняя обёртку (если нужно)
+                    row[j] = row[j].replace(stripped, values[value_index].strip()) if stripped else values[value_index].strip()
+                    value_index += 1
+                else:
+                    logger.warning("Недостаточно значений для заполнения таблицы")
+                    return
+    if value_index < len(values):
+        logger.warning(f"Избыток значений: {len(values) - value_index} не использовано")
 
+#Параграфы
+def extract_paragraphs(blocks: List[Dict]) -> List[str]:
+    """Извлекает все непустые параграфы из блоков (без таблиц)"""
+    paragraphs = []
+    for block in blocks:
+        if block["type"] == "paragraph":
+            text = block["text"].strip()
+            if text:
+                paragraphs.append(text)
+    return paragraphs
 
-def extract_columns_to_fill(template_tables: list):
-    """Извлекает столбцы, содержащие <>, с полным контекстом"""
-    columns_to_fill = []
+def replace_placeholders(text: str, replacements: List[str]) -> str:
+    """Заменяет каждое вхождение <Заполнить> в тексте на значение из списка по порядку"""
+    parts = text.split("<Заполнить>")
+    if len(replacements) == 0:
+        return text
 
-    for tbl in template_tables:
-        columns = table_to_columns(tbl["data"])
-        for col_idx, col in enumerate(columns):
-            if any("<>" in cell for cell in col):
-                columns_to_fill.append({
-                    "table_name": tbl["name"],
-                    "column_index": col_idx,
-                    "column": col  # вся колонка целиком
-                })
+    result = parts[0]
+    for i, part in enumerate(parts[1:], start=1):
+        value = replacements[i-1] if i-1 < len(replacements) else "<Заполнить>"
+        result += value + part
+    return result
 
-    return columns_to_fill
+def process_paragraph_with_llm(paragraph_text: str, source_paragraphs: List[str], model_name: str) -> str:
+    """
+    Находит все <Заполнить> в параграфе, запрашивает значения у LLM, возвращает заполненный текст.
+    """
+    placeholders = paragraph_text.count("<Заполнить>")
+    if placeholders == 0:
+        return paragraph_text
 
+    source_context = "\n".join(f"• {p}" for p in source_paragraphs)
+
+    prompt = f"""
+Просмотри следующий фрагмент из шаблона:
+{paragraph_text}
+
+Найди в следующих данных информацию, которая по контексту и смыслу подходит шаблону и замени на неё тег <Заполнить>.
+Если таких тегов несколько, то напиши ответы через запятую. 
+{source_context}
+
+Отвечай без пояснений, ничего лишнего кроме фразы, которую необходимо подставить в шаблоне вместо <Заполнить>. Соблюдай падеж, склонение и смотри чтобы лаконично вписывалось в предложение.
+"""
+
+    try:
+        response = request(prompt, model_name=model_name)
+        values = [line.strip() for line in response.strip().split("\n") if line.strip()]
+        if len(values) == 1 and "," in values[0]:
+            values = [v.strip() for v in values[0].split(",")]
+        # Ограничиваем число значений числу тегов
+        values = values[:placeholders]
+        return replace_placeholders(paragraph_text, values)
+    except Exception as e:
+        logger.error(f"Ошибка при обработке параграфа '{paragraph_text}': {str(e)}")
+        return replace_placeholders(paragraph_text, ["<Заполнить>"] * placeholders)
 
 def main():
-    source_structure = parse(load_config('source_path'))
-    template_structure = parse(load_config('template_path'))
+    source_path = load_config("source_path")
+    template_path = load_config("template_path")
+    output_path = load_config("output_path")
+    model_name = load_config("model")
 
-    source_tables = extract_tables_with_metadata(source_structure)
-    template_tables = extract_tables_with_metadata(template_structure)
+    # Парсим оба документа
+    source_blocks = parse(source_path)
+    template_blocks = parse(template_path)
 
-    columns_to_fill = extract_columns_to_fill(template_tables)
-    source_text = format_source_for_llm(source_tables)
+    # Извлекаем таблицы с именами
+    def extract_tables(blocks):
+        tables = []
+        for i, block in enumerate(blocks):
+            if block["type"] == "table":
+                name = "Без названия"
+                for j in range(i-1, -1, -1):
+                    prev = blocks[j]
+                    if prev["type"] == "paragraph" and "таблица" in prev["text"].lower():
+                        name = prev["text"].strip()
+                        break
+                tables.append({"name": name, "data": block["data"]})
+        return tables
 
-    print("📚 ФОРМАТ ДЛЯ LLM (ИСТОЧНИК):")
-    print(source_text)
-    print("\n" + "="*80)
+    source_tables = extract_tables(source_blocks)
+    template_tables = extract_tables(template_blocks)
 
-    results = []
+    # Копируем шаблон для редактирования
+    doc = docx.Document(template_path)
+    output_tables = doc.tables  # Соответствуют порядку в документе
+    table_index = 0  # Индекс таблицы в output
 
-    for col_req in columns_to_fill:
-        table_name = col_req["table_name"]
-        column = col_req["column"]
-        col_idx = col_req["column_index"]
+    # Обрабатываем каждую таблицу в шаблоне
+    for template_table in template_tables:
+        logger.info(f"Обработка таблицы: {template_table['name']}")
 
-        # Форматируем целевой столбец
-        column_lines = "\n".join(f"    Строка {i+1}: {cell}" for i, cell in enumerate(column))
+        # Форматируем контекст
+        target_text = format_target_table(template_table)
+        source_text = format_source_tables(source_tables)
 
         prompt = f"""
-            Просмотри следующие данные таблиц:
-            {source_text}
-            
-            Ты должен найти исходя из предоставленных данных таблицу, которая соответствует следующей таблице с названием: {table_name}
-            и столбцом: 
-            {column_lines}
-            Опираясь на название, количество незаполненных строк столбца найди подходящие на место <> значения и напиши в ответ данные через запятую, которые надо заполнить 
-            Никакие примечания, пояснения и прочего лишнего отвечать не нужно. Если нумерация таблиц не совпадает - это нормально."""
+Просмотри следующую информацию о таблице:
 
-        print(f"\n🔍 Заполняем: таблица '{table_name}', столбец {col_idx+1}")
-        print("Целевой столбец:")
-        for i, cell in enumerate(column):
-            print(f"  Строка {i+1}: {cell}")
+{target_text}
 
-        response = request(prompt)
-        print(f"🎯 Ответ LLM:\n{response}")
+Найди в следующих данных таблицу, которая семантически и контекстно соответствует исходной, а после перечисли все эти данные по порядку через запятую.
+Перечисляемые данные должны быть строго те, которые указаны в ячейке.
 
-        results.append({
-            **col_req,
-            "filled_column": response
-        })
+{source_text}
 
-    print("\n" + "="*80)
-    print("📋 РЕЗУЛЬТАТЫ:")
-    for res in results:
-        print(f"  Таблица: '{res['table_name']}', Столбец {res['column_index']+1}")
-        print(f"  {res['filled_column']}\n")
+Данных должно получиться столько же, сколько написано напротив ПУСТО (Не больше, не меньше). Пояснений и комментариев не добавляй.
+"""
+
+        try:
+            logger.debug(f"Запрос к LLM сформирован для таблицы: {template_table['name']}")
+            response = request(prompt, model_name=model_name)
+            response_clean = response.strip()
+            logger.info(f"LLM ОТВЕТ для '{template_table['name']}':")
+            logger.info(f"→ {response_clean}")
+
+            # Парсим ответ
+            if response_clean == "-" or not response_clean:
+                values = []
+            else:
+                values = [v.strip() for v in response_clean.split(", ")]
+
+            # Получаем ожидаемое число пустых ячеек
+            empty_count = table_to_structured_data(template_table)["empty_count"]
+            if len(values) != empty_count:
+                logger.warning(f"Количество значений ({len(values)}) ≠ ожидаемому ({empty_count})")
+
+            # Заполняем таблицу в документе
+            if table_index < len(output_tables):
+                docx_table = output_tables[table_index]
+                
+                # Заполняем по порядку в template_table["data"]
+                fill_table_data(template_table["data"], values)
+
+                # Теперь переносим данные обратно в docx-таблицу
+                for i, row in enumerate(template_table["data"]):
+                    if i >= len(docx_table.rows):
+                        continue
+                    docx_row = docx_table.rows[i]
+                    for j, cell_value in enumerate(row):
+                        if j >= len(docx_row.cells):
+                            continue
+                        docx_cell = docx_row.cells[j]
+                        
+                        # Очищаем и устанавливаем новое значение 
+                        # (используем только первый параграф ячейки, чтобы избежать дублирования текста)
+                        docx_cell.paragraphs[0].clear()
+                        docx_cell.paragraphs[0].add_run(str(cell_value))
+
+            else:
+                logger.error(f"Не хватает таблиц в выходном документе для: {template_table['name']}")
+
+            table_index += 1
+
+        except Exception as e:
+            logger.error(f"Ошибка при обработке таблицы '{template_table['name']}': {str(e)}")
+
+    logger.info("Начинаем обработку параграфов с <Заполнить>")
+
+    # Извлекаем исходные параграфы для контекста
+    source_paragraphs = extract_paragraphs(source_blocks)
+
+    # Проходим по всем параграфам в документе и заменяем <Заполнить>
+    for p in doc.paragraphs:
+        if "<Заполнить>" in p.text:
+            original_text = p.text
+            filled_text = process_paragraph_with_llm(original_text, source_paragraphs, model_name)
+            p.clear()
+            p.add_run(filled_text)
+            logger.info(f"Заменено: '{original_text}' → '{filled_text}'")
+
+    # Сохраняем результат
+    doc.save(output_path)
+    logger.info(f"Документ сохранён: {output_path}")
+
+    logger.info("Обработка завершена.")
 
 if __name__ == "__main__":
     main()
-    
