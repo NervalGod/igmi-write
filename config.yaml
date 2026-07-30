@@ -1,8 +1,8 @@
 source_path: "input/1902-ИГМИ.docx"
 template_path: "input/Выходной_док_Климат_ПД_240527 (003).docx"
-output_path: "output/output.docx"
+output_path: "output/output2.docx"
 test1: "test.docx"
 test2: "test2.docx"
 
-model: "qwen3.6:35b"
+model: "qwen3.6:27b"
 
