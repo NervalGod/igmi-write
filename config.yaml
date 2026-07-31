@@ -4,5 +4,5 @@ output_path: "output/output2.docx"
 test1: "test.docx"
 test2: "test2.docx"
 
-model: "qwen3.6:27b"
+model: "qwen3.6:35b"
 

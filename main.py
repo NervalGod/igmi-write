@@ -21,27 +21,25 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def table_to_structured_data(table_block: Dict) -> Dict:
-    """Возвращает данные таблицы, считает число ПУСТЫХ ячеек (не только <>)"""
+    """Возвращает данные таблицы, считает число ПУСТЫХ ячеек"""
     data = table_block["data"]
     if not data:
         return {"rows": [], "empty_count": 0}
 
     empty_count = 0
     rows = []
+    empty_markers = {"", "<>", "•", "<Заполнить>", "-"}
+    
     for i, row in enumerate(data):
         formatted_cells = []
         for cell in row:
             stripped = cell.strip()
             formatted_cells.append(stripped)
-            # Считаем пустые или почти пусткие ячейки
-            if not stripped or stripped == "":
+            if not stripped or stripped in empty_markers:
                 empty_count += 1
         rows.append(f"  Строка {i+1}: {', '.join(formatted_cells)}")
 
-    return {
-        "rows": rows,
-        "empty_count": empty_count
-    }
+    return {"rows": rows, "empty_count": empty_count}
 
 def format_source_tables(source_tables: List[Dict]) -> str:
     """Форматирует ВСЕ исходные таблицы — по строкам, как есть"""
@@ -64,24 +62,25 @@ def format_target_table(template_table: Dict) -> str:
     return "\n".join(lines)
 
 def fill_table_data(table_data: List[List[str]], values: List[str]) -> None:
-    """
-    Заполняет ПУСТЫЕ ячейки (пустые строки или содержащие только пробелы/•) значениями.
-    Обход: по строкам сверху вниз, слева направо.
-    """
+    """Заполняет ПУСТЫЕ ячейки значениями. Обход: сверху вниз, слева направо."""
     value_index = 0
+    empty_markers = {"", "<>", "•", "<Заполнить>", "-"}
+    
     for row in table_data:
         for j in range(len(row)):
             stripped = row[j].strip()
-            if not stripped or stripped == "":  # Можно добавить другие маркеры
+            if not stripped or stripped in empty_markers:
                 if value_index < len(values):
-                    # Вставляем значение, сохраняя обёртку (если нужно)
-                    row[j] = row[j].replace(stripped, values[value_index].strip()) if stripped else values[value_index].strip()
+                    # Прямое присваивание вместо replace
+                    row[j] = values[value_index].strip()
                     value_index += 1
                 else:
                     logger.warning("Недостаточно значений для заполнения таблицы")
                     return
+                    
     if value_index < len(values):
         logger.warning(f"Избыток значений: {len(values) - value_index} не использовано")
+
 
 #Параграфы
 def extract_paragraphs(blocks: List[Dict]) -> List[str]:
@@ -154,8 +153,9 @@ def main():
         tables = []
         for i, block in enumerate(blocks):
             if block["type"] == "table":
-                name = "Без названия"
-                for j in range(i-1, -1, -1):
+                name = f"Таблица {len(tables) + 1}" # Резервное имя
+                # Ищем название только среди 2 предыдущих блоков, чтобы не зацепить чужое
+                for j in range(max(0, i - 2), i):
                     prev = blocks[j]
                     if prev["type"] == "paragraph" and "таблица" in prev["text"].lower():
                         name = prev["text"].strip()
