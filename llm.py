@@ -11,7 +11,10 @@ def request(prompt: str, model_name: str = None) -> str:
                     "role": "user",
                     "content": prompt
                     }
-            ]
+            ],           
+            options={
+                "num_ctx": 65536
+            }
         )
         return response["message"]["content"].strip()
     except Exception as e:
