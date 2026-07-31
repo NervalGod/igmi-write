@@ -238,20 +238,16 @@ PARA_1: Нет данных
             docx_p.add_run(filled_text)
             
             if original_text != filled_text:
-                logger.info(f"✅ Заполнено {pid}: '{original_text}' → '{filled_text}'")
+                logger.info(f"Заполнено {pid}: '{original_text}' → '{filled_text}'")
                 success_count += 1
             else:
-                logger.warning(f"⚠️ {pid} не изменён (значения не найдены)")
+                logger.warning(f"{pid} не изменён (значения не найдены)")
 
         logger.info(f"Обработка параграфов завершена. Успешно заполнено: {success_count}/{len(targets)}")
 
     except Exception as e:
         logger.error(f"Ошибка при пакетной обработке параграфов: {str(e)}")
         logger.warning("Параграфы останутся с тегами <Заполнить>.")
-
-# ==============================================================================
-# ГЛАВНАЯ ФУНКЦИЯ (без изменений)
-# ==============================================================================
 
 def main():
     try:
@@ -334,7 +330,7 @@ def main():
     process_all_paragraphs_batch(doc, source_blocks, model_name)
 
     doc.save(output_path)
-    logger.info(f"✅ Документ успешно сохранён: {output_path}")
+    logger.info(f"Документ успешно сохранён: {output_path}")
     logger.info("Обработка завершена.")
 
 if __name__ == "__main__":
