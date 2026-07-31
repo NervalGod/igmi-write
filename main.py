@@ -1,6 +1,5 @@
 import logging
-import re
-from typing import List, Dict, Any
+from typing import List, Dict
 import docx
 
 from helper import load_config
@@ -19,50 +18,81 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# ==============================================================================
-# ФУНКЦИИ ДЛЯ РАБОТЫ С ТАБЛИЦАМИ (без изменений)
-# ==============================================================================
-
-def table_to_structured_data(table_block: Dict) -> Dict:
-    """Возвращает данные таблицы, считает число ПУСТЫХ ячеек (учитывает маркеры)"""
+def table_to_compact_text(table_block: Dict, table_id: str) -> str:
+    """
+    Преобразует таблицу в компактный текстовый формат для LLM.
+    Показывает только непустые ячейки и помечает пустые как [ПУСТО].
+    """
     data = table_block.get("data", [])
     if not data:
-        return {"rows": [], "empty_count": 0}
-
-    empty_count = 0
-    rows = []
-    empty_markers = {"", "<>", "•", "<Заполнить>", "-"}
+        return f"[{table_id}] Название: {table_block['name']}\n(пустая таблица)\n"
+    
+    lines = [f"[{table_id}] Название: {table_block['name']}"]
+    lines.append("СТРУКТУРА:")
     
     for i, row in enumerate(data):
-        formatted_cells = []
-        for cell in row:
+        row_parts = []
+        for j, cell in enumerate(row):
             stripped = cell.strip()
-            formatted_cells.append(stripped)
-            if not stripped or stripped in empty_markers:
-                empty_count += 1
-        rows.append(f"  Строка {i+1}: {', '.join(formatted_cells)}")
-
-    return {"rows": rows, "empty_count": empty_count}
-
-def format_source_tables(source_tables: List[Dict]) -> str:
-    lines = ["ИСХОДНЫЕ ТАБЛИЦЫ:"]
-    for tbl in source_tables:
-        lines.append(f"– {tbl['name']}")
-        structured = table_to_structured_data(tbl)
-        lines.extend(structured["rows"])
+            if not stripped or stripped in ["", "<>", "•", "<Заполнить>", "-"]:
+                row_parts.append(f"[ПУСТО]")
+            else:
+                row_parts.append(stripped)
+        lines.append(f"  Строка {i+1}: {' | '.join(row_parts)}")
+    
+    # Считаем пустые ячейки
+    empty_count = sum(1 for row in data for cell in row if not cell.strip() or cell.strip() in ["", "<>", "•", "<Заполнить>", "-"])
+    lines.append(f"ТРЕБУЕТСЯ ЗАПОЛНИТЬ ЯЧЕЕК: {empty_count}")
+    lines.append("")
+    
     return "\n".join(lines)
 
-def format_target_table(template_table: Dict) -> str:
-    structured = table_to_structured_data(template_table)
-    lines = [
-        f"Название: {template_table['name']}",
-        "СТРОКИ:"
-    ]
-    lines.extend(structured["rows"])
-    lines.append(f"ПУСТО: {structured['empty_count']}")
+def format_source_tables_compact(source_tables: List[Dict]) -> str:
+    """Форматирует исходные таблицы в компактном виде"""
+    lines = ["=== ИСХОДНЫЕ ДАННЫЕ (ТАБЛИЦЫ) ==="]
+    for i, tbl in enumerate(source_tables):
+        lines.append(table_to_compact_text(tbl, f"SRC_{i}"))
     return "\n".join(lines)
 
-def fill_table_data(table_data: List[List[str]], values: List[str]) -> None:
+def parse_tables_llm_response(response_text: str, target_tables: List[Dict]) -> Dict[str, List[str]]:
+    """
+    Парсит текстовый ответ LLM для таблиц.
+    Формат ответа:
+        TBL_0: значение1
+        TBL_0: значение2
+        TBL_1: значение3
+    
+    Возвращает словарь {ID: [список значений в порядке заполнения]}.
+    """
+    result: Dict[str, List[str]] = {f"TBL_{i}": [] for i in range(len(target_tables))}
+    
+    # Сортируем ID по длине (убывание), чтобы "TBL_10" не матчился как "TBL_1" + "0"
+    sorted_ids = sorted(result.keys(), key=len, reverse=True)
+    
+    for line in response_text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        
+        # Ищем строку вида "TBL_X: ..."
+        for tid in sorted_ids:
+            prefix = f"{tid}:"
+            if line.startswith(prefix):
+                value = line[len(prefix):].strip()
+                # Отбрасываем возможные кавычки по краям
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+                    value = value[1:-1]
+                if value:
+                    result[tid].append(value)
+                break
+                
+    return result
+
+def fill_table_data_batch(table_data: List[List[str]], values: List[str]) -> None:
+    """
+    Заполняет ПУСТЫЕ ячейки значениями.
+    Обход: по строкам сверху вниз, слева направо.
+    """
     value_index = 0
     empty_markers = {"", "<>", "•", "<Заполнить>", "-"}
     
@@ -81,6 +111,7 @@ def fill_table_data(table_data: List[List[str]], values: List[str]) -> None:
         logger.warning(f"Избыток значений: {len(values) - value_index} не использовано")
 
 def extract_tables(blocks: List[Dict]) -> List[Dict]:
+    """Извлекает таблицы и пытается найти их название в предыдущих параграфах"""
     tables = []
     for i, block in enumerate(blocks):
         if block["type"] == "table":
@@ -93,9 +124,118 @@ def extract_tables(blocks: List[Dict]) -> List[Dict]:
             tables.append({"name": name, "data": block["data"]})
     return tables
 
-# ==============================================================================
-# ФУНКЦИИ ДЛЯ РАБОТЫ С ПАРАГРАФАМИ (ТЕКСТОВЫЙ ФОРМАТ ВМЕСТО JSON)
-# ==============================================================================
+def process_all_tables_batch(doc, source_blocks: List[Dict], template_blocks: List[Dict], model_name: str) -> None:
+    """
+    Находит все таблицы в шаблоне, формирует ОДИН запрос к LLM,
+    парсит ответ и заполняет все таблицы.
+    """
+    # 1. Извлекаем таблицы
+    source_tables = extract_tables(source_blocks)
+    template_tables = extract_tables(template_blocks)
+    
+    if not template_tables:
+        logger.info("Таблицы в шаблоне не найдены. Пропуск.")
+        return
+    
+    logger.info(f"Найдено {len(template_tables)} таблиц для обработки. Формируем единый запрос к LLM...")
+    
+    # 2. Формируем компактное представление целевых таблиц
+    target_tables_text = "=== ЦЕЛЕВЫЕ ТАБЛИЦЫ (ШАБЛОН) ===\n"
+    for i, tbl in enumerate(template_tables):
+        target_tables_text += table_to_compact_text(tbl, f"TBL_{i}")
+    
+    # 3. Формируем компактное представление исходных таблиц
+    source_tables_text = format_source_tables_compact(source_tables)
+    
+    # 4. Считаем ожидаемое количество значений для каждой таблицы
+    expected_counts = {}
+    for i, tbl in enumerate(template_tables):
+        empty_count = sum(1 for row in tbl["data"] for cell in row if not cell.strip() or cell.strip() in ["", "<>", "•", "<Заполнить>", "-"])
+        expected_counts[f"TBL_{i}"] = empty_count
+    
+    # 5. Составляем промпт
+    prompt = f"""
+Ты — ассистент по заполнению документов.
+У тебя есть ИСХОДНЫЕ ТАБЛИЦЫ с данными и ЦЕЛЕВЫЕ ТАБЛИЦЫ из шаблона, которые нужно заполнить.
+
+{source_tables_text}
+
+{target_tables_text}
+
+ЗАДАЧА:
+Для каждой целевой таблицы (TBL_0, TBL_1, ...) найди в исходных данных таблицу, которая семантически и контекстно соответствует.
+Затем перечисли все значения для заполнения пустых ячеек [ПУСТО] в порядке обхода: сверху вниз, слева направо.
+Если данных нет, используй "Нет данных".
+
+ФОРМАТ ОТВЕТА (СТРОГО СОБЛЮДАЙ):
+Выводи каждое значение на отдельной строке в формате:
+TBL_X: значение
+
+Если в одной таблице несколько пустых ячеек, выведи несколько строк с одинаковым ID в порядке заполнения.
+НЕ добавляй никаких пояснений, приветствий, нумерации или markdown-обёрток. Только строки формата "TBL_X: значение".
+
+ПРИМЕР ПРАВИЛЬНОГО ОТВЕТА:
+TBL_0: 15.5
+TBL_0: 23.1
+TBL_0: Нет данных
+TBL_1: Иванов И.И.
+TBL_1: 01.01.2024
+"""
+
+    # 6. Делаем ОДИН запрос к LLM
+    try:
+        response = request(prompt, model_name=model_name)
+        logger.debug(f"Сырой ответ LLM для таблиц:\n{response}")
+        
+        # 7. Парсинг ответа
+        parsed_data = parse_tables_llm_response(response, template_tables)
+        
+        # 8. Применяем данные к таблицам в документе
+        output_tables = doc.tables
+        success_count = 0
+        
+        for i, template_table in enumerate(template_tables):
+            tid = f"TBL_{i}"
+            values = parsed_data.get(tid, [])
+            expected_count = expected_counts[tid]
+            
+            logger.info(f"Таблица {tid} ('{template_table['name']}'): получено {len(values)} значений, ожидалось {expected_count}")
+            
+            # Корректируем количество значений
+            if len(values) < expected_count:
+                values.extend(["Нет данных"] * (expected_count - len(values)))
+                logger.warning(f"LLM вернула меньше значений для {tid}. Дополнено 'Нет данных'.")
+            elif len(values) > expected_count:
+                values = values[:expected_count]
+                logger.warning(f"LLM вернула больше значений для {tid}. Лишние отброшены.")
+            
+            # Заполняем данные в template_table
+            fill_table_data_batch(template_table["data"], values)
+            
+            # Переносим в docx-таблицу
+            if i < len(output_tables):
+                docx_table = output_tables[i]
+                for row_idx, row in enumerate(template_table["data"]):
+                    if row_idx >= len(docx_table.rows):
+                        continue
+                    docx_row = docx_table.rows[row_idx]
+                    for col_idx, cell_value in enumerate(row):
+                        if col_idx >= len(docx_row.cells):
+                            continue
+                        docx_cell = docx_row.cells[col_idx]
+                        docx_cell.paragraphs[0].clear()
+                        docx_cell.paragraphs[0].add_run(str(cell_value))
+                
+                success_count += 1
+                logger.info(f"Таблица {tid} заполнена")
+            else:
+                logger.error(f"Не хватает таблиц в выходном документе для {tid}")
+        
+        logger.info(f"Обработка таблиц завершена. Успешно заполнено: {success_count}/{len(template_tables)}")
+        
+    except Exception as e:
+        logger.error(f"Ошибка при пакетной обработке таблиц: {str(e)}")
+        logger.warning("Таблицы останутся незаполненными.")
 
 def replace_placeholders(text: str, replacements: List[str]) -> str:
     """Заменяет каждое вхождение <Заполнить> в тексте на значение из списка по порядку"""
@@ -115,12 +255,8 @@ def parse_llm_response(response_text: str, targets: Dict) -> Dict[str, List[str]
         PARA_0: значение1
         PARA_0: значение2
         PARA_1: значение3
-    
-    Возвращает словарь {ID: [список значений в порядке появления]}.
     """
     result: Dict[str, List[str]] = {pid: [] for pid in targets}
-    
-    # Сортируем ID по длине (убывание), чтобы "PARA_10" не матчился как "PARA_1" + "0"
     sorted_ids = sorted(targets.keys(), key=len, reverse=True)
     
     for line in response_text.splitlines():
@@ -128,12 +264,10 @@ def parse_llm_response(response_text: str, targets: Dict) -> Dict[str, List[str]
         if not line:
             continue
         
-        # Ищем строку вида "PARA_X: ..."
         for pid in sorted_ids:
             prefix = f"{pid}:"
             if line.startswith(prefix):
                 value = line[len(prefix):].strip()
-                # Отбрасываем возможные кавычки по краям (LLM иногда их ставит)
                 if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
                     value = value[1:-1]
                 if value:
@@ -147,7 +281,6 @@ def process_all_paragraphs_batch(doc, source_blocks: List[Dict], model_name: str
     Находит все параграфы с <Заполнить>, формирует ОДИН запрос к LLM,
     парсит текстовый ответ и применяет замены напрямую к объектам docx.Paragraph.
     """
-    # 1. Собираем все целевые параграфы с уникальными ID
     targets = {}
     para_id = 0
     for p in doc.paragraphs:
@@ -165,7 +298,6 @@ def process_all_paragraphs_batch(doc, source_blocks: List[Dict], model_name: str
 
     logger.info(f"Найдено {len(targets)} параграфов для обработки. Формируем единый запрос к LLM...")
 
-    # 2. Формируем контекст из исходного документа
     source_paragraphs = [
         block["text"].strip() 
         for block in source_blocks 
@@ -173,12 +305,10 @@ def process_all_paragraphs_batch(doc, source_blocks: List[Dict], model_name: str
     ]
     source_context = "\n".join(f"• {p}" for p in source_paragraphs)
 
-    # 3. Формируем список задач для LLM
     tasks_text = ""
     for pid, data in targets.items():
         tasks_text += f"[{pid}] (требуется {data['count']} значений): {data['text']}\n"
 
-    # 4. Составляем промпт с инструкцией по текстовому формату
     prompt = f"""
 Ты — ассистент по заполнению документов. 
 У тебя есть ИСХОДНЫЕ ДАННЫЕ и список ЦЕЛЕВЫХ ФРАГМЕНТОВ шаблона, в которых нужно заменить тег <Заполнить>.
@@ -191,7 +321,7 @@ def process_all_paragraphs_batch(doc, source_blocks: List[Dict], model_name: str
 
 ЗАДАЧА:
 Для каждого ID найди в исходных данных подходящую по смыслу информацию для замены тега <Заполнить>.
-Соблюдай падеж, число и лаконичность.
+Соблюдай падеж, число и лаконичность. Если данных нет, используй фразу "Нет данных".
 
 ФОРМАТ ОТВЕТА (СТРОГО СОБЛЮДАЙ):
 Выводи каждое значение на отдельной строке в формате:
@@ -206,21 +336,17 @@ PARA_0: 15.01.2024
 PARA_1: Нет данных
 """
 
-    # 5. Делаем ОДИН запрос к LLM
     try:
         response = request(prompt, model_name=model_name)
         logger.debug(f"Сырой ответ LLM:\n{response}")
         
-        # 6. Парсинг текстового ответа
         parsed_data = parse_llm_response(response, targets)
 
-        # 7. Применяем замены к документу
         success_count = 0
         for pid, data in targets.items():
             values = parsed_data.get(pid, [])
             expected_count = data["count"]
             
-            # Корректируем количество значений
             if len(values) < expected_count:
                 values.extend(["<Заполнить>"] * (expected_count - len(values)))
                 logger.warning(f"LLM вернула меньше значений для {pid} ({len(values)}/{expected_count}). Оставлены теги.")
@@ -228,11 +354,9 @@ PARA_1: Нет данных
                 values = values[:expected_count]
                 logger.warning(f"LLM вернула больше значений для {pid}. Лишние отброшены.")
 
-            # Заменяем текст
             original_text = data["text"]
             filled_text = replace_placeholders(original_text, values)
             
-            # Обновляем docx объект
             docx_p = data["docx_obj"]
             docx_p.clear()
             docx_p.add_run(filled_text)
@@ -264,68 +388,13 @@ def main():
     source_blocks = parse(source_path)
     template_blocks = parse(template_path)
 
-    source_tables = extract_tables(source_blocks)
-    template_tables = extract_tables(template_blocks)
-
     doc = docx.Document(template_path)
-    output_tables = doc.tables
-    table_index = 0
 
-    for template_table in template_tables:
-        logger.info(f"Обработка таблицы: {template_table['name']}")
+    # ПАКЕТНАЯ обработка всех таблиц
+    logger.info("Начинаем пакетную обработку всех таблиц")
+    process_all_tables_batch(doc, source_blocks, template_blocks, model_name)
 
-        target_text = format_target_table(template_table)
-        source_text = format_source_tables(source_tables)
-
-        prompt = f"""
-Просмотри следующую информацию о таблице:
-
-{target_text}
-
-Найди в следующих данных таблицу, которая семантически и контекстно соответствует исходной, а после перечисли все эти данные по порядку, обязательно через запятую и пробел (, ).
-Перечисляемые данные должны быть строго те, которые указаны в ячейке. Если данных нет, то ставь "Нет данных".
-
-{source_text}
-
-Данных должно получиться столько же, сколько написано напротив ПУСТО (Не больше, не меньше). Пояснений и комментариев не добавляй.
-"""
-
-        try:
-            response = request(prompt, model_name=model_name)
-            response_clean = response.strip()
-            logger.info(f"LLM ОТВЕТ для '{template_table['name']}': → {response_clean}")
-
-            if not response_clean or response_clean.lower() in ["-", "нет данных", "нет"]:
-                values = []
-            else:
-                values = [v.strip() for v in response_clean.split(", ") if v.strip()]
-
-            empty_count = table_to_structured_data(template_table)["empty_count"]
-            if len(values) != empty_count:
-                logger.warning(f"Количество значений ({len(values)}) ≠ ожидаемому ({empty_count})")
-
-            if table_index < len(output_tables):
-                docx_table = output_tables[table_index]
-                fill_table_data(template_table["data"], values)
-
-                for i, row in enumerate(template_table["data"]):
-                    if i >= len(docx_table.rows):
-                        continue
-                    docx_row = docx_table.rows[i]
-                    for j, cell_value in enumerate(row):
-                        if j >= len(docx_row.cells):
-                            continue
-                        docx_cell = docx_row.cells[j]
-                        docx_cell.paragraphs[0].clear()
-                        docx_cell.paragraphs[0].add_run(str(cell_value))
-            else:
-                logger.error(f"Не хватает таблиц в выходном документе для: {template_table['name']}")
-
-            table_index += 1
-
-        except Exception as e:
-            logger.error(f"Ошибка при обработке таблицы '{template_table['name']}': {str(e)}")
-
+    # ПАКЕТНАЯ обработка параграфов с <Заполнить>
     logger.info("Начинаем пакетную обработку параграфов с <Заполнить>")
     process_all_paragraphs_batch(doc, source_blocks, model_name)
 
