@@ -57,7 +57,6 @@ def main() -> None:
         embed_model=cfg.embed_model,
         llm_model=cfg.model,
         llm_options=llm_options,
-        tables_per_call=cfg.tables_per_call,
     )
 
     logger.info("Заполнение параграфов...")

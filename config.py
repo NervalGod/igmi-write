@@ -16,8 +16,6 @@ class Config:
     temperature: float = 0.0
     keep_alive: str = "30m"
     num_predict: int = -1
-    tables_per_call: int = 4
-
 
 def load_config(path: str = "config.yaml") -> Config:
     with open(path, "r", encoding="utf-8") as f:
@@ -38,5 +36,4 @@ def load_config(path: str = "config.yaml") -> Config:
         temperature=raw.get("temperature", 0.0),
         keep_alive=raw.get("keep_alive", "30m"),
         num_predict=raw.get("num_predict", -1),
-        tables_per_call=raw.get("tables_per_call", 4),
     )
