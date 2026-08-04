@@ -110,35 +110,39 @@ def _apply_table_values(table: TableBlock, values: List[str]) -> None:
             docx_cell.paragraphs[0].add_run(value)
 
 
-def fill_tables(
+def _fill_table_chunk(
+    chunk: List[TableBlock],
     source_tables: List[TableBlock],
-    template_tables: List[TableBlock],
+    source_vectors,
     embed_model: str,
     llm_model: str,
     llm_options: dict,
-    top_k_per_target: int = 3,
-) -> None:
-    if not template_tables:
-        logger.info("Таблицы в шаблоне не найдены, пропуск.")
-        return
-    if not source_tables:
-        logger.warning("В исходнике нет таблиц — заполнять нечем.")
-        return
-
-    relevant_sources = _select_relevant(
-        source_items=source_tables,
-        source_signatures=[table_signature(t) for t in source_tables],
-        target_signatures=[table_signature(t) for t in template_tables],
-        embed_model=embed_model,
-        top_k_per_target=top_k_per_target,
-    )
-
+    top_k_per_target: int,
+) -> int:
+    """Один LLM-вызов на пакет из нескольких (не всех) целевых таблиц. Возвращает число заполненных."""
     empty_counts = {}
     target_blocks = []
-    for i, t in enumerate(template_tables):
+    for i, t in enumerate(chunk):
         tid = f"TBL_{i}"
         empty_counts[tid] = sum(is_empty_cell(c) for row in t.data for c in row)
         target_blocks.append(_table_to_text(t, tid))
+
+    if all(c == 0 for c in empty_counts.values()):
+        return 0  # в этом пакете нечего заполнять
+
+    target_signatures = [table_signature(t) for t in chunk]
+    if source_vectors.shape[0] > 0:
+        try:
+            target_vectors = embed_texts(target_signatures, embed_model)
+            relevant_idx = set()
+            for tv in target_vectors:
+                relevant_idx.update(most_similar(tv, source_vectors, top_k=top_k_per_target))
+            relevant_sources = [source_tables[i] for i in sorted(relevant_idx)]
+        except Exception:
+            logger.exception("Эмбеддинги недоступны для этого пакета, берём все исходные таблицы")
+            relevant_sources = source_tables
+    else:
+        relevant_sources = source_tables
 
     source_blocks = [_table_to_text(t, f"SRC_{i}") for i, t in enumerate(relevant_sources)]
 
@@ -172,7 +176,7 @@ TBL_1: Иванов И.И."""
     parsed = _parse_id_response(response, list(empty_counts.keys()))
 
     filled = 0
-    for i, template_table in enumerate(template_tables):
+    for i, template_table in enumerate(chunk):
         tid = f"TBL_{i}"
         expected = empty_counts[tid]
         if expected == 0:
@@ -180,14 +184,61 @@ TBL_1: Иванов И.И."""
 
         values = parsed.get(tid, [])
         if len(values) < expected:
-            logger.warning(f"{tid}: получено {len(values)}/{expected} значений, дополняем")
+            logger.warning(
+                f"{tid} ('{template_table.name}'): получено {len(values)}/{expected} значений. "
+                f"Если 0 — проверьте generation.log (DEBUG) на сырой ответ модели: "
+                f"вероятно, ответ обрезан или модель не выдержала формат."
+            )
             values = values + [FALLBACK_VALUE] * (expected - len(values))
         elif len(values) > expected:
             values = values[:expected]
 
         _apply_table_values(template_table, values)
         filled += 1
-        logger.info(f"Таблица '{template_table.name}' ({tid}) заполнена: {expected} значений")
+        logger.info(f"Таблица '{template_table.name}' заполнена: {expected} значений")
+
+    return filled
+
+
+def fill_tables(
+    source_tables: List[TableBlock],
+    template_tables: List[TableBlock],
+    embed_model: str,
+    llm_model: str,
+    llm_options: dict,
+    top_k_per_target: int = 3,
+    tables_per_call: int = 4,
+) -> None:
+    """
+    Заполняет таблицы шаблона пакетами по tables_per_call штук за один вызов LLM,
+    а не всё разом за один вызов и не по одной. На шаблонах с большим числом
+    таблиц (десятки) один гигантский запрос требует от модели сотни строго
+    отформатированных строк за раз — это ненадёжно даже с корректным num_predict.
+    Пакет в несколько таблиц — компромисс: заметно меньше вызовов, чем "по одной"
+    (которое уже проверено как медленное), но реалистичный объём ответа на вызов.
+    """
+    if not template_tables:
+        logger.info("Таблицы в шаблоне не найдены, пропуск.")
+        return
+    if not source_tables:
+        logger.warning("В исходнике нет таблиц — заполнять нечем.")
+        return
+
+    try:
+        source_vectors = embed_texts([table_signature(t) for t in source_tables], embed_model)
+    except Exception:
+        logger.exception("Эмбеддинг-модель недоступна, весь исходник будет отправляться без фильтрации")
+        source_vectors = embed_texts([], embed_model)  # пустая матрица -> fallback на все таблицы в чанке
+
+    chunks = [template_tables[i:i + tables_per_call] for i in range(0, len(template_tables), tables_per_call)]
+    logger.info(f"Таблицы: {len(template_tables)} шт., разбито на {len(chunks)} пакетов по {tables_per_call}")
+
+    filled = 0
+    for chunk_num, chunk in enumerate(chunks, start=1):
+        logger.info(f"Пакет таблиц {chunk_num}/{len(chunks)}...")
+        filled += _fill_table_chunk(
+            chunk, source_tables, source_vectors, embed_model, llm_model, llm_options, top_k_per_target
+        )
 
     logger.info(f"Таблицы: заполнено {filled}/{len(template_tables)}")
 

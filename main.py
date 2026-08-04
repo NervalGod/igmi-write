@@ -7,15 +7,20 @@ from config import load_config
 from filler import fill_paragraphs, fill_tables
 from parser import paragraphs_of, parse, tables_of
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
+_formatter = logging.Formatter(
+    fmt="%(asctime)s | %(levelname)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[
-        logging.FileHandler("generation.log", encoding="utf-8"),
-        logging.StreamHandler(),
-    ],
 )
+
+_file_handler = logging.FileHandler("generation.log", encoding="utf-8")
+_file_handler.setLevel(logging.DEBUG)  # сюда же падают сырые ответы LLM — смотреть при разборе проблем
+_file_handler.setFormatter(_formatter)
+
+_console_handler = logging.StreamHandler()
+_console_handler.setLevel(logging.INFO)  # в консоли — без сырых ответов, чтобы не засорять вывод
+_console_handler.setFormatter(_formatter)
+
+logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handler])
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +43,12 @@ def main() -> None:
     source_blocks = parse(source_doc, with_refs=False)
     template_blocks = parse(template_doc, with_refs=True)
 
-    llm_options = dict(num_ctx=cfg.num_ctx, temperature=cfg.temperature, keep_alive=cfg.keep_alive)
+    llm_options = dict(
+        num_ctx=cfg.num_ctx,
+        temperature=cfg.temperature,
+        keep_alive=cfg.keep_alive,
+        num_predict=cfg.num_predict,
+    )
 
     logger.info("Заполнение таблиц...")
     fill_tables(
@@ -47,6 +57,7 @@ def main() -> None:
         embed_model=cfg.embed_model,
         llm_model=cfg.model,
         llm_options=llm_options,
+        tables_per_call=cfg.tables_per_call,
     )
 
     logger.info("Заполнение параграфов...")
