@@ -83,6 +83,8 @@ venv) ai@ai-server:~/projects/igmi-write/igmi-write$ /home/ai/projects/igmi-writ
 2026-07-31 14:53:16 | INFO | Обработка завершена.
 (venv) ai@ai-server:~/projects/igmi-write/igmi-write$ 
 
+
+
 (venv) ai@ai-server:~/projects/igmi-write/igmi-write$ /home/ai/projects/igmi-write/igmi-write/venv/bin/python /home/ai/projects/igmi-write/igmi-write/main.py
 2026-07-31 15:16:14 | INFO | Начало обработки. Модель: qwen3.6:35b
 2026-07-31 15:16:15 | INFO | Начинаем пакетную обработку всех таблиц
