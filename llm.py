@@ -7,6 +7,13 @@ import ollama
 
 logger = logging.getLogger(__name__)
 
+# Грубая оценка: средний токен ~4 символа для английского, ~1.5 для русского.
+# Это очень приблизительно, но для отладки достаточно.
+def estimate_tokens(text: str) -> int:
+    rus_chars = sum(1 for c in text if ord(c) > 127)
+    eng_chars = len(text) - rus_chars
+    return (rus_chars // 1.5) + (eng_chars // 4)
+
 
 def request(
     prompt: str,
@@ -27,6 +34,13 @@ def request(
     ДО того, как модель успеет написать хоть одну валидную строку —
     и парсер потом видит "0 значений", хотя дело не в модели, а в лимите.
     """
+    estimated_tokens = estimate_tokens(prompt)
+    logger.info(
+        f"LLM запрос: {len(prompt)} симв. (~{estimated_tokens} токенов), "
+        f"параметры: num_ctx={num_ctx}, temperature={temperature}, num_predict={num_predict}"
+    )
+    logger.debug(f"Содержимое промпта:\n{prompt}\n{'='*80}")
+
     started = time.perf_counter()
     try:
         response = ollama.chat(
@@ -36,9 +50,16 @@ def request(
             keep_alive=keep_alive,
         )
         elapsed = time.perf_counter() - started
-        logger.info(f"LLM: промпт {len(prompt)} симв. -> {elapsed:.1f} сек, ответ {len(response['message']['content'])} симв.")
-        logger.debug(f"Сырой ответ LLM:\n{response['message']['content']}")
-        return response["message"]["content"].strip()
-    except Exception:
-        logger.exception("Ошибка при обращении к LLM")
+        answer_text = response["message"]["content"].strip()
+        answer_tokens = estimate_tokens(answer_text)
+        
+        logger.info(
+            f"LLM ответ: {len(answer_text)} симв. (~{answer_tokens} токенов), "
+            f"время обработки {elapsed:.1f} сек"
+        )
+        logger.debug(f"Содержимое ответа:\n{answer_text}\n{'='*80}")
+        
+        return answer_text
+    except Exception as e:
+        logger.exception(f"Ошибка при обращении к LLM: {e}")
         raise

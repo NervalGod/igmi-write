@@ -57,11 +57,22 @@ def _select_relevant(
         return source_items
 
     relevant_idx = set()
-    for tv in target_vectors:
-        relevant_idx.update(most_similar(tv, source_vectors, top_k=top_k_per_target))
+    logger.debug(f"_select_relevant: ищу релевантные по {len(target_signatures)} целям из {len(source_items)} исходных")
+    
+    for target_i, tv in enumerate(target_vectors):
+        top_indices = most_similar(tv, source_vectors, top_k=top_k_per_target)
+        logger.debug(f"  Цель {target_i} '{target_signatures[target_i][:60]}...' -> источники {top_indices}")
+        relevant_idx.update(top_indices)
 
     kept = sorted(relevant_idx)
-    logger.info(f"Отбор контекста: {len(kept)}/{len(source_items)} исходных элементов релевантны целям")
+    logger.info(
+        f"Отбор контекста: выбрано {len(kept)}/{len(source_items)} исходных элементов "
+        f"(индексы {kept})"
+    )
+    for idx in kept:
+        if idx < len(source_signatures):
+            logger.debug(f"  Выбран источник {idx}: '{source_signatures[idx][:60]}...'")
+    
     return [source_items[i] for i in kept]
 
 

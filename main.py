@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 
 import docx
@@ -7,20 +8,29 @@ from config import load_config
 from filler import fill_paragraphs, fill_tables
 from parser import paragraphs_of, parse, tables_of
 
-_formatter = logging.Formatter(
-    fmt="%(asctime)s | %(levelname)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 
-_file_handler = logging.FileHandler("generation.log", encoding="utf-8")
-_file_handler.setLevel(logging.DEBUG)  # сюда же падают сырые ответы LLM — смотреть при разборе проблем
-_file_handler.setFormatter(_formatter)
+def setup_logging(log_file: str):
+    """Настраивает логирование с очисткой лог-файла при каждом запуске."""
+    # Очищаем лог-файл
+    if os.path.exists(log_file):
+        os.remove(log_file)
 
-_console_handler = logging.StreamHandler()
-_console_handler.setLevel(logging.INFO)  # в консоли — без сырых ответов, чтобы не засорять вывод
-_console_handler.setFormatter(_formatter)
+    _formatter = logging.Formatter(
+        fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
-logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handler])
+    _file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    _file_handler.setLevel(logging.DEBUG)
+    _file_handler.setFormatter(_formatter)
+
+    _console_handler = logging.StreamHandler()
+    _console_handler.setLevel(logging.INFO)
+    _console_handler.setFormatter(_formatter)
+
+    logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handler])
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,17 +40,26 @@ def main() -> None:
     try:
         cfg = load_config()
     except Exception as e:
-        logger.error(f"Ошибка загрузки конфигурации: {e}")
+        logging.error(f"Ошибка загрузки конфигурации: {e}")
         return
 
-    logger.info(f"Модель: {cfg.model} | embeddings: {cfg.embed_model} | num_ctx: {cfg.num_ctx}")
+    # Настраиваем логирование ПОСЛЕ загрузки конфига
+    setup_logging(cfg.log_file)
+    logger.info("=" * 80)
+    logger.info(f"НАЧАЛО ОБРАБОТКИ | Модель: {cfg.model} | Embeddings: {cfg.embed_model}")
+    logger.info(f"Исходник: {cfg.source_path}")
+    logger.info(f"Шаблон: {cfg.template_path}")
+    logger.info(f"Выход: {cfg.output_path}")
+    logger.info(f"Лог-файл: {cfg.log_file}")
+    logger.info("=" * 80)
 
     source_doc = docx.Document(cfg.source_path)
     template_doc = docx.Document(cfg.template_path)
 
-    # with_refs=True для шаблона — блоки хранят прямую ссылку на объекты
-    # python-docx, чтобы писать результат без повторного поиска по индексам.
+    logger.info("Парсинг исходного документа...")
     source_blocks = parse(source_doc, with_refs=False)
+
+    logger.info("Парсинг шаблонного документа...")
     template_blocks = parse(template_doc, with_refs=True)
 
     llm_options = dict(
@@ -57,7 +76,6 @@ def main() -> None:
         embed_model=cfg.embed_model,
         llm_model=cfg.model,
         llm_options=llm_options,
-        tables_per_call=cfg.tables_per_call,
     )
 
     logger.info("Заполнение параграфов...")
@@ -72,7 +90,10 @@ def main() -> None:
     template_doc.save(cfg.output_path)
 
     elapsed = time.perf_counter() - started
-    logger.info(f"Готово: {cfg.output_path} (за {elapsed:.1f} сек)")
+    logger.info("=" * 80)
+    logger.info(f"УСПЕШНО: {cfg.output_path}")
+    logger.info(f"Общее время обработки: {elapsed:.1f} сек")
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":
