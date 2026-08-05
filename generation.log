@@ -1,0 +1,1228 @@
+2026-08-04 16:02:18 | INFO | Модель: qwen3.6:35b | embeddings: bge-m3 | num_ctx: 16384
+2026-08-04 16:02:19 | INFO | Заполнение таблиц...
+2026-08-04 16:02:19 | DEBUG | connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+2026-08-04 16:02:19 | DEBUG | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7bdddaf97380>
+2026-08-04 16:02:19 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:02:19 | DEBUG | send_request_headers.complete
+2026-08-04 16:02:19 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:02:19 | DEBUG | send_request_body.complete
+2026-08-04 16:02:19 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:02:22 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:02:22 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:02:22 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:02:22 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:02:22 | DEBUG | receive_response_body.complete
+2026-08-04 16:02:22 | DEBUG | response_closed.started
+2026-08-04 16:02:22 | DEBUG | response_closed.complete
+2026-08-04 16:02:22 | INFO | Таблицы: 20 шт., разбито на 5 пакетов по 4
+2026-08-04 16:02:22 | INFO | Пакет таблиц 1/5...
+2026-08-04 16:02:22 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:02:22 | DEBUG | send_request_headers.complete
+2026-08-04 16:02:22 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:02:22 | DEBUG | send_request_body.complete
+2026-08-04 16:02:22 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:02:23 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:02:23 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:02:23 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:02:23 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:02:23 | DEBUG | receive_response_body.complete
+2026-08-04 16:02:23 | DEBUG | response_closed.started
+2026-08-04 16:02:23 | DEBUG | response_closed.complete
+2026-08-04 16:02:23 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:02:23 | DEBUG | send_request_headers.complete
+2026-08-04 16:02:23 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:02:23 | DEBUG | send_request_body.complete
+2026-08-04 16:02:23 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:05:10 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:05:10 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:05:10 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:05:10 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:05:10 | DEBUG | receive_response_body.complete
+2026-08-04 16:05:10 | DEBUG | response_closed.started
+2026-08-04 16:05:10 | DEBUG | response_closed.complete
+2026-08-04 16:05:10 | INFO | LLM: промпт 14422 симв. -> 167.6 сек, ответ 559 симв.
+2026-08-04 16:05:10 | DEBUG | Сырой ответ LLM:
+TBL_0: –19,3
+TBL_0: –18,9
+TBL_0: –14,1
+TBL_0: –8,3
+TBL_0: –0,8
+TBL_0: 7,8
+TBL_0: 13,3
+TBL_0: 10,1
+TBL_0: 5,0
+TBL_0: –2,9
+TBL_0: –11,4
+TBL_0: –15,4
+TBL_0: –4,6
+TBL_1: -48,1
+TBL_1: -48,4
+TBL_1: -46,0
+TBL_1: -37,0
+TBL_1: -27,4
+TBL_1: -7,3
+TBL_1: -0,8
+TBL_1: -5,4
+TBL_1: -10,6
+TBL_1: -32,6
+TBL_1: -40,6
+TBL_1: -45,0
+TBL_1: -48,4
+TBL_2: 2,3
+TBL_2: 2,1
+TBL_2: 5,7
+TBL_2: 14,2
+TBL_2: 29,9
+TBL_2: 33,1
+TBL_2: 33,8
+TBL_2: 30,1
+TBL_2: 23,7
+TBL_2: 16,4
+TBL_2: 5,1
+TBL_2: 2,1
+TBL_2: 33,8
+TBL_3: –50
+TBL_3: –48
+TBL_3: –45
+TBL_3: –42
+TBL_3: –57
+TBL_3: 227
+TBL_3: Нет данных
+2026-08-04 16:05:10 | INFO | Таблица 'Таблица 1Средняя месячная и годовая температура воздуха, С' заполнена: 13 значений
+2026-08-04 16:05:10 | INFO | Таблица 'Таблица 2Абсолютный минимум температуры воздуха, С' заполнена: 13 значений
+2026-08-04 16:05:10 | INFO | Таблица 'Таблица 3Абсолютный максимум температуры воздуха, С' заполнена: 13 значений
+2026-08-04 16:05:10 | WARNING | TBL_3 ('Таблица 4 Расчетные параметры температуры холодного периода года'): получено 7/8 значений. Если 0 — проверьте generation.log (DEBUG) на сырой ответ модели: вероятно, ответ обрезан или модель не выдержала формат.
+2026-08-04 16:05:10 | INFO | Таблица 'Таблица 4 Расчетные параметры температуры холодного периода года' заполнена: 8 значений
+2026-08-04 16:05:10 | INFO | Пакет таблиц 2/5...
+2026-08-04 16:05:10 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:05:10 | DEBUG | send_request_headers.complete
+2026-08-04 16:05:10 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:05:10 | DEBUG | send_request_body.complete
+2026-08-04 16:05:10 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:05:14 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:05:14 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:05:14 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:05:14 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:05:14 | DEBUG | receive_response_body.complete
+2026-08-04 16:05:14 | DEBUG | response_closed.started
+2026-08-04 16:05:14 | DEBUG | response_closed.complete
+2026-08-04 16:05:14 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:05:14 | DEBUG | send_request_headers.complete
+2026-08-04 16:05:14 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:05:14 | DEBUG | send_request_body.complete
+2026-08-04 16:05:14 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:09:00 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:09:00 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:09:00 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:09:00 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:09:00 | DEBUG | receive_response_body.complete
+2026-08-04 16:09:00 | DEBUG | response_closed.started
+2026-08-04 16:09:00 | DEBUG | response_closed.complete
+2026-08-04 16:09:00 | INFO | LLM: промпт 14537 симв. -> 225.8 сек, ответ 444 симв.
+2026-08-04 16:09:00 | DEBUG | Сырой ответ LLM:
+TBL_0: 18,9
+TBL_0: 33,8
+TBL_0: 75
+TBL_0: 323
+TBL_0: 81
+TBL_0: В
+TBL_1: –5,4
+TBL_1: –5,9
+TBL_1: –6,2
+TBL_1: –3,4
+TBL_1: –0,1
+TBL_1: 5,0
+TBL_1: 10,5
+TBL_1: 8,7
+TBL_1: 4,1
+TBL_1: 0,3
+TBL_1: –2,8
+TBL_1: –4,8
+TBL_1: 0,0
+TBL_2: –50
+TBL_2: –48
+TBL_2: –45
+TBL_2: –42
+TBL_2: –57
+TBL_2: 227 суток
+TBL_2: 83
+TBL_2: 123
+TBL_2: ЮЗ
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_3: 18,9
+TBL_3: 33,8
+TBL_3: 75
+TBL_3: 323
+TBL_3: 81
+2026-08-04 16:09:00 | INFO | Таблица 'Таблица 5 Расчетные параметры температуры теплого периода года' заполнена: 6 значений
+2026-08-04 16:09:00 | INFO | Таблица 'Таблица 6 Средняя месячная и годовая температура поверхности почвы, С' заполнена: 13 значений
+2026-08-04 16:09:00 | INFO | Таблица 'Таблица 7 Расчетные характеристики температуры воздуха холодного периода года (метеостанция <Заполнить>)' заполнена: 13 значений
+2026-08-04 16:09:00 | INFO | Таблица 'Таблица 8 Расчетные характеристики температуры воздуха теплого периода года (метеостанция <Заполнить>)' заполнена: 5 значений
+2026-08-04 16:09:00 | INFO | Пакет таблиц 3/5...
+2026-08-04 16:09:00 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:09:00 | DEBUG | send_request_headers.complete
+2026-08-04 16:09:00 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:09:00 | DEBUG | send_request_body.complete
+2026-08-04 16:09:00 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:09:04 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:09:04 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:09:04 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:09:04 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:09:04 | DEBUG | receive_response_body.complete
+2026-08-04 16:09:04 | DEBUG | response_closed.started
+2026-08-04 16:09:04 | DEBUG | response_closed.complete
+2026-08-04 16:09:04 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:09:04 | DEBUG | send_request_headers.complete
+2026-08-04 16:09:04 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:09:04 | DEBUG | send_request_body.complete
+2026-08-04 16:09:04 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:12:15 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:12:15 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:12:15 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:12:15 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:12:15 | DEBUG | receive_response_body.complete
+2026-08-04 16:12:15 | DEBUG | response_closed.started
+2026-08-04 16:12:15 | DEBUG | response_closed.complete
+2026-08-04 16:12:15 | INFO | LLM: промпт 12588 симв. -> 190.7 сек, ответ 1950 симв.
+2026-08-04 16:12:15 | DEBUG | Сырой ответ LLM:
+TBL_0: –5,4
+TBL_0: –5,9
+TBL_0: –6,2
+TBL_0: –3,4
+TBL_0: –0,1
+TBL_0: 5,0
+TBL_0: 10,5
+TBL_0: 8,7
+TBL_0: 4,1
+TBL_0: 0,3
+TBL_0: –2,8
+TBL_0: –4,8
+TBL_0: 0,0
+TBL_0: –4,0
+TBL_0: –4,8
+TBL_0: –5,0
+TBL_0: –2,9
+TBL_0: –0,3
+TBL_0: 3,2
+TBL_0: 8,3
+TBL_0: 7,4
+TBL_0: 4,0
+TBL_0: 0,6
+TBL_0: –1,7
+TBL_0: –3,4
+TBL_0: 0,1
+TBL_0: –3,0
+TBL_0: –3,9
+TBL_0: –3,8
+TBL_0: –2,4
+TBL_0: –0,3
+TBL_0: 2,0
+TBL_0: 6,9
+TBL_0: 6,1
+TBL_0: 3,7
+TBL_0: 0,8
+TBL_0: –0,6
+TBL_0: –2,0
+TBL_0: 0,3
+TBL_0: –2,2
+TBL_0: –3,0
+TBL_0: –3,5
+TBL_0: –2,2
+TBL_0: –0,4
+TBL_0: 1,1
+TBL_0: 5,4
+TBL_0: 5,2
+TBL_0: 3,4
+TBL_0: 0,8
+TBL_0: –0,2
+TBL_0: –1,2
+TBL_0: 0,3
+TBL_0: –0,9
+TBL_0: –1,8
+TBL_0: –2,4
+TBL_0: –2,2
+TBL_0: –0,5
+TBL_0: 0,0
+TBL_0: 1,9
+TBL_0: 3,2
+TBL_0: 2,4
+TBL_0: 0,6
+TBL_0: 0,0
+TBL_0: –0,3
+TBL_0: 0,0
+TBL_0: –0,2
+TBL_0: –0,6
+TBL_0: –1,5
+TBL_0: –1,7
+TBL_0: –0,7
+TBL_0: –0,1
+TBL_0: 0,3
+TBL_0: 1,5
+TBL_0: 1,6
+TBL_0: 0,5
+TBL_0: 0,1
+TBL_0: 0,0
+TBL_0: –0,1
+TBL_0: –0,1
+TBL_0: –0,2
+TBL_0: –0,7
+TBL_0: –1,2
+TBL_0: –0,7
+TBL_0: –0,3
+TBL_0: –0,2
+TBL_0: 0,0
+TBL_0: 0,2
+TBL_0: 0,1
+TBL_0: 0,0
+TBL_0: –0,1
+TBL_0: –0,2
+TBL_0: –0,2
+TBL_0: –0,2
+TBL_0: –0,6
+TBL_0: –1,0
+TBL_0: –0,7
+TBL_0: –0,4
+TBL_0: –0,2
+TBL_0: –0,1
+TBL_0: –0,1
+TBL_0: –0,1
+TBL_0: –0,2
+TBL_0: –0,2
+TBL_0: –0,3
+TBL_1: 24
+TBL_1: 20
+TBL_1: 20
+TBL_1: 22
+TBL_1: 32
+TBL_1: 47
+TBL_1: 56
+TBL_1: 67
+TBL_1: 54
+TBL_1: 45
+TBL_1: 32
+TBL_1: 27
+TBL_1: Нет данных
+TBL_1: Нет данных
+TBL_1: 446
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_2: Нет данных
+TBL_3: Нет данных
+TBL_3: Нет данных
+TBL_3: Нет данных
+TBL_3: Нет данных
+TBL_3: Нет данных
+TBL_3: Нет данных
+2026-08-04 16:12:15 | INFO | Таблица 'Таблица 9* Среднемесячная и годовая температура почвы по вытяжным термометрам по метеостанции <Заполнить>' заполнена: 104 значений
+2026-08-04 16:12:15 | INFO | Таблица 'Таблица 10 Месячное и годовое количество осадков, мм' заполнена: 15 значений
+2026-08-04 16:12:15 | WARNING | TBL_2 ('Таблица 11 Среднее месячное и годовое количество дней с осадками'): получено 26/27 значений. Если 0 — проверьте generation.log (DEBUG) на сырой ответ модели: вероятно, ответ обрезан или модель не выдержала формат.
+2026-08-04 16:12:15 | INFO | Таблица 'Таблица 11 Среднее месячное и годовое количество дней с осадками' заполнена: 27 значений
+2026-08-04 16:12:15 | INFO | Таблица 'Таблица 12 Суточный максимум осадков (мм) различной обеспеченности' заполнена: 6 значений
+2026-08-04 16:12:15 | INFO | Пакет таблиц 4/5...
+2026-08-04 16:12:15 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:12:15 | DEBUG | send_request_headers.complete
+2026-08-04 16:12:15 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:12:15 | DEBUG | send_request_body.complete
+2026-08-04 16:12:15 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:12:19 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:12:19 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:12:19 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:12:19 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:12:19 | DEBUG | receive_response_body.complete
+2026-08-04 16:12:19 | DEBUG | response_closed.started
+2026-08-04 16:12:19 | DEBUG | response_closed.complete
+2026-08-04 16:12:19 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:12:19 | DEBUG | send_request_headers.complete
+2026-08-04 16:12:19 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:12:19 | DEBUG | send_request_body.complete
+2026-08-04 16:12:19 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:14:59 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:14:59 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:14:59 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:14:59 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:14:59 | DEBUG | receive_response_body.complete
+2026-08-04 16:14:59 | DEBUG | response_closed.started
+2026-08-04 16:14:59 | DEBUG | response_closed.complete
+2026-08-04 16:14:59 | INFO | LLM: промпт 7782 симв. -> 159.6 сек, ответ 711 симв.
+2026-08-04 16:14:59 | DEBUG | Сырой ответ LLM:
+TBL_0: Нет данных
+TBL_0: Нет данных
+TBL_0: Нет данных
+TBL_0: 1
+TBL_0: 4
+TBL_0: 8
+TBL_0: 11
+TBL_0: 15
+TBL_0: 18
+TBL_0: 19
+TBL_0: 21
+TBL_0: 22
+TBL_0: 24
+TBL_0: 25
+TBL_0: 26
+TBL_0: 27
+TBL_0: 28
+TBL_0: 29
+TBL_0: 30
+TBL_0: 31
+TBL_0: 33
+TBL_0: 33
+TBL_0: 30
+TBL_0: 23
+TBL_0: 16
+TBL_0: 10
+TBL_1: 5,2
+TBL_1: 5,2
+TBL_1: 5,3
+TBL_1: 5,0
+TBL_1: 4,9
+TBL_1: 4,6
+TBL_1: 4,0
+TBL_1: 3,9
+TBL_1: 4,1
+TBL_1: 4,5
+TBL_1: 4,7
+TBL_1: 5,3
+TBL_1: 4,7
+TBL_2: 28ф
+TBL_2: 28ф
+TBL_2: 24ф
+TBL_2: 24ф
+TBL_2: 24а
+TBL_2: 16фа
+TBL_2: 15а
+TBL_2: 16ф
+TBL_2: 20ф
+TBL_2: 20ф
+TBL_2: 20ф
+TBL_2: 20ф
+TBL_2: 28ф
+TBL_3: 34фа
+TBL_3: 37а
+TBL_3: 34ф
+TBL_3: 26а
+TBL_3: 34а
+TBL_3: 25а
+TBL_3: 27а
+TBL_3: 22а
+TBL_3: 26а
+TBL_3: 24а
+TBL_3: 30а
+TBL_3: 28ф
+TBL_3: 37а
+2026-08-04 16:14:59 | INFO | Таблица 'Таблица 13 Средняя декадная высота снежного покрова по постоянной рейке, см' заполнена: 26 значений
+2026-08-04 16:14:59 | INFO | Таблица 'Таблица 14 Средняя месячная и годовая скорость ветра, м/с' заполнена: 13 значений
+2026-08-04 16:14:59 | INFO | Таблица 'Таблица 15 Максимальная скорость ветра, м/с' заполнена: 13 значений
+2026-08-04 16:14:59 | INFO | Таблица 'Таблица 16 Максимальная скорость ветра с учетом порывов, м/с' заполнена: 13 значений
+2026-08-04 16:14:59 | INFO | Пакет таблиц 5/5...
+2026-08-04 16:14:59 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:14:59 | DEBUG | send_request_headers.complete
+2026-08-04 16:14:59 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:14:59 | DEBUG | send_request_body.complete
+2026-08-04 16:14:59 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:15:03 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:15:03 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:15:03 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:15:03 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:15:03 | DEBUG | receive_response_body.complete
+2026-08-04 16:15:03 | DEBUG | response_closed.started
+2026-08-04 16:15:03 | DEBUG | response_closed.complete
+2026-08-04 16:15:03 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:15:03 | DEBUG | send_request_headers.complete
+2026-08-04 16:15:03 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:15:03 | DEBUG | send_request_body.complete
+2026-08-04 16:15:03 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:19:52 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:19:52 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:19:52 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:19:52 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:19:52 | DEBUG | receive_response_body.complete
+2026-08-04 16:19:52 | DEBUG | response_closed.started
+2026-08-04 16:19:52 | DEBUG | response_closed.complete
+2026-08-04 16:19:52 | INFO | LLM: промпт 6452 симв. -> 289.1 сек, ответ 0 симв.
+2026-08-04 16:19:52 | DEBUG | Сырой ответ LLM:
+
+2026-08-04 16:19:52 | WARNING | TBL_0 ('Таблица 17 Среднее число дней с сильным ветром (более 15 м/с)'): получено 0/13 значений. Если 0 — проверьте generation.log (DEBUG) на сырой ответ модели: вероятно, ответ обрезан или модель не выдержала формат.
+2026-08-04 16:19:52 | INFO | Таблица 'Таблица 17 Среднее число дней с сильным ветром (более 15 м/с)' заполнена: 13 значений
+2026-08-04 16:19:52 | WARNING | TBL_1 ('Таблица 18 Наибольшее число дней с сильным ветром (более 15 м/с)'): получено 0/13 значений. Если 0 — проверьте generation.log (DEBUG) на сырой ответ модели: вероятно, ответ обрезан или модель не выдержала формат.
+2026-08-04 16:19:52 | INFO | Таблица 'Таблица 18 Наибольшее число дней с сильным ветром (более 15 м/с)' заполнена: 13 значений
+2026-08-04 16:19:52 | WARNING | TBL_2 ('Таблица 19 Повторяемость (%) направления ветра и штилей'): получено 0/9 значений. Если 0 — проверьте generation.log (DEBUG) на сырой ответ модели: вероятно, ответ обрезан или модель не выдержала формат.
+2026-08-04 16:19:52 | INFO | Таблица 'Таблица 19 Повторяемость (%) направления ветра и штилей' заполнена: 9 значений
+2026-08-04 16:19:52 | WARNING | TBL_3 ('Таблица 20 Среднее число дней с обледенением'): получено 0/26 значений. Если 0 — проверьте generation.log (DEBUG) на сырой ответ модели: вероятно, ответ обрезан или модель не выдержала формат.
+2026-08-04 16:19:52 | INFO | Таблица 'Таблица 20 Среднее число дней с обледенением' заполнена: 26 значений
+2026-08-04 16:19:52 | INFO | Таблицы: заполнено 20/20
+2026-08-04 16:19:52 | INFO | Заполнение параграфов...
+2026-08-04 16:19:52 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:19:52 | DEBUG | send_request_headers.complete
+2026-08-04 16:19:52 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:19:52 | DEBUG | send_request_body.complete
+2026-08-04 16:19:52 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:19:58 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:19:58 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:19:58 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:19:58 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:19:58 | DEBUG | receive_response_body.complete
+2026-08-04 16:19:58 | DEBUG | response_closed.started
+2026-08-04 16:19:58 | DEBUG | response_closed.complete
+2026-08-04 16:19:58 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:19:58 | DEBUG | send_request_headers.complete
+2026-08-04 16:19:58 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:19:58 | DEBUG | send_request_body.complete
+2026-08-04 16:19:58 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:19:59 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:19:59 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:19:59 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:19:59 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:19:59 | DEBUG | receive_response_body.complete
+2026-08-04 16:19:59 | DEBUG | response_closed.started
+2026-08-04 16:19:59 | DEBUG | response_closed.complete
+2026-08-04 16:19:59 | INFO | Отбор контекста: 95/228 исходных элементов релевантны целям
+2026-08-04 16:19:59 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:19:59 | DEBUG | send_request_headers.complete
+2026-08-04 16:19:59 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:19:59 | DEBUG | send_request_body.complete
+2026-08-04 16:19:59 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:25:43 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:25:43 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:25:43 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:25:43 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:25:43 | DEBUG | receive_response_body.complete
+2026-08-04 16:25:43 | DEBUG | response_closed.started
+2026-08-04 16:25:43 | DEBUG | response_closed.complete
+2026-08-04 16:25:43 | INFO | LLM: промпт 19511 симв. -> 344.1 сек, ответ 928 симв.
+2026-08-04 16:25:43 | DEBUG | Сырой ответ LLM:
+PARA_0: «1902(ПО-30-КО-ОП-ОП-1902) - Обустройство кустовых площадок №№ 8-бис, 17 Западно-Хоседаюского нефтяного месторождения ЦХП (блок №3) им. Д. Садецкого и увеличение пропускной способности нефтегазосборных трубопроводов»
+PARA_1: Российская Федерация, Архангельская область, Ненецкий автономный округ, муниципальный район «Заполярный район»
+PARA_2: Хорей-Вер
+PARA_2: Хоседа-Хард
+PARA_3: Хорей-Вер
+PARA_4: типично арктический
+PARA_5: 4,6
+PARA_6: января
+PARA_6: июля
+PARA_7: 33,8
+PARA_7: 57
+PARA_8: Хоседа-Хард
+PARA_9: Хорей-Вер
+PARA_10: Хоседа-Хард
+PARA_11: Хоседа-Хард
+PARA_12: 446
+PARA_12: 1
+PARA_12: 102
+PARA_13: нормальная
+PARA_14: 65
+PARA_14: Нет данных
+PARA_15: 650
+PARA_16: 4,7
+PARA_17: 28
+PARA_17: 37
+PARA_18: 10,0
+PARA_19: юго-западное
+PARA_20: IГ
+PARA_21: V
+PARA_21: 2,5
+PARA_22: IV
+PARA_22: 0,48
+PARA_23: III
+PARA_23: 10
+PARA_24: 57
+PARA_25: 33,8
+PARA_26: III
+PARA_27: II
+PARA_28: 10
+PARA_28: 20
+PARA_29: Нет данных
+2026-08-04 16:25:43 | INFO | PARA_0 заполнен: 'Объект строительства (наименование) – <Заполнить>....'
+2026-08-04 16:25:43 | INFO | PARA_1 заполнен: 'Географическое (или административное) расположение...'
+2026-08-04 16:25:43 | INFO | PARA_2 заполнен: 'Характеристика климата составлена данным метеостан...'
+2026-08-04 16:25:43 | INFO | PARA_3 заполнен: 'Для проектирования рекомендуется принимать характе...'
+2026-08-04 16:25:43 | INFO | PARA_4 заполнен: 'Климат района изысканий — <Заполнить>....'
+2026-08-04 16:25:43 | INFO | PARA_5 заполнен: 'Среднегодовая температура воздуха равняется минус ...'
+2026-08-04 16:25:43 | INFO | PARA_6 заполнен: 'Наиболее холодным месяцем является <Заполнить>, на...'
+2026-08-04 16:25:43 | INFO | PARA_7 заполнен: 'Максимальная температура воздуха за весь период на...'
+2026-08-04 16:25:43 | INFO | PARA_8 заполнен: 'Расчетные характеристики температуры воздуха в соо...'
+2026-08-04 16:25:43 | INFO | PARA_9 заполнен: 'Таблица 7 Расчетные характеристики температуры воз...'
+2026-08-04 16:25:43 | INFO | PARA_10 заполнен: 'Таблица 8 Расчетные характеристики температуры воз...'
+2026-08-04 16:25:43 | INFO | PARA_11 заполнен: 'Таблица 9* Среднемесячная и годовая температура по...'
+2026-08-04 16:25:43 | INFO | PARA_12 заполнен: 'В среднем за год выпадает <Заполнить> мм осадков. ...'
+2026-08-04 16:25:43 | INFO | PARA_13 заполнен: 'Зона влажности – <Заполнить> (по СП 50.13330.2012,...'
+2026-08-04 16:25:43 | INFO | PARA_14 заполнен: 'Расчетная максимальная высота снежного покрова обе...'
+2026-08-04 16:25:43 | INFO | PARA_15 заполнен: 'Расчетная высота снегового покрова с вероятностью ...'
+2026-08-04 16:25:43 | INFO | PARA_16 заполнен: 'Среднегодовая скорость ветра в районе изысканий со...'
+2026-08-04 16:25:43 | INFO | PARA_17 заполнен: 'Абсолютный наблюденный максимум скорости ветра за ...'
+2026-08-04 16:25:43 | INFO | PARA_18 заполнен: 'Скорость ветра, повторяемость превышения которой с...'
+2026-08-04 16:25:43 | INFO | PARA_19 заполнен: 'Преобладающее годовое направление ветра – <Заполни...'
+2026-08-04 16:25:43 | INFO | PARA_20 заполнен: 'В соответствии с СП 131.13330.2020 «Строительная к...'
+2026-08-04 16:25:43 | INFO | PARA_21 заполнен: 'по весу снегового покрова (Карта 1) – <Заполнить>;...'
+2026-08-04 16:25:43 | INFO | PARA_22 заполнен: 'по давлению ветра (Карта 2) – <Заполнить>; нормати...'
+2026-08-04 16:25:43 | INFO | PARA_23 заполнен: 'по толщине стенки гололеда (Карта 3) – <Заполнить>...'
+2026-08-04 16:25:43 | INFO | PARA_24 заполнен: 'по нормативным значениям минимальной температуры в...'
+2026-08-04 16:25:43 | INFO | PARA_25 заполнен: 'по нормативным значениям максимальной температуры ...'
+2026-08-04 16:25:43 | INFO | PARA_26 заполнен: 'по ветровому давлению – <Заполнить>;...'
+2026-08-04 16:25:43 | INFO | PARA_27 заполнен: 'по толщине стенке гололеда – <Заполнить>;...'
+2026-08-04 16:25:43 | INFO | PARA_28 заполнен: 'по среднегодовой продолжительности гроз – от <Запо...'
+2026-08-04 16:25:43 | INFO | PARA_29 заполнен: 'по пляске проводов – <Заполнить>....'
+2026-08-04 16:25:43 | INFO | Параграфы: заполнено 30/30
+2026-08-04 16:25:43 | INFO | Готово: output/outputemb2.docx (за 1404.3 сек)
+2026-08-04 16:35:46 | INFO | Модель: qwen3.6:35b | embeddings: bge-m3 | num_ctx: 16384
+2026-08-04 16:35:46 | INFO | Заполнение таблиц...
+2026-08-04 16:36:03 | INFO | Модель: qwen3.6:35b | embeddings: bge-m3 | num_ctx: 16384
+2026-08-04 16:36:04 | INFO | Заполнение таблиц...
+2026-08-04 16:36:04 | DEBUG | connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+2026-08-04 16:36:04 | DEBUG | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x70a53bd8b620>
+2026-08-04 16:36:04 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:36:04 | DEBUG | send_request_headers.complete
+2026-08-04 16:36:04 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:36:04 | DEBUG | send_request_body.complete
+2026-08-04 16:36:04 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:36:06 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:36:06 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:36:06 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:36:06 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:36:06 | DEBUG | receive_response_body.complete
+2026-08-04 16:36:06 | DEBUG | response_closed.started
+2026-08-04 16:36:06 | DEBUG | response_closed.complete
+2026-08-04 16:36:06 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:36:06 | DEBUG | send_request_headers.complete
+2026-08-04 16:36:06 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:36:06 | DEBUG | send_request_body.complete
+2026-08-04 16:36:06 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:36:07 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:36:07 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:36:07 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:36:07 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:36:07 | DEBUG | receive_response_body.complete
+2026-08-04 16:36:07 | DEBUG | response_closed.started
+2026-08-04 16:36:07 | DEBUG | response_closed.complete
+2026-08-04 16:36:07 | INFO | Отбор контекста: 17/29 исходных элементов релевантны целям
+2026-08-04 16:36:07 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:36:07 | DEBUG | send_request_headers.complete
+2026-08-04 16:36:07 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:36:07 | DEBUG | send_request_body.complete
+2026-08-04 16:36:07 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:38:01 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:38:01 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:38:01 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:38:01 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:38:01 | DEBUG | receive_response_body.complete
+2026-08-04 16:38:01 | DEBUG | response_closed.started
+2026-08-04 16:38:01 | DEBUG | response_closed.complete
+2026-08-04 16:38:01 | INFO | LLM: промпт 30234 симв. -> 113.9 сек, ответ 0 симв.
+2026-08-04 16:38:01 | DEBUG | Сырой ответ LLM:
+
+2026-08-04 16:38:01 | WARNING | TBL_0 ('Таблица 1Средняя месячная и годовая температура воздуха, С'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 1Средняя месячная и годовая температура воздуха, С' (TBL_0) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_1 ('Таблица 2Абсолютный минимум температуры воздуха, С'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 2Абсолютный минимум температуры воздуха, С' (TBL_1) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_2 ('Таблица 3Абсолютный максимум температуры воздуха, С'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 3Абсолютный максимум температуры воздуха, С' (TBL_2) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_3 ('Таблица 4 Расчетные параметры температуры холодного периода года'): получено 0/8 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 4 Расчетные параметры температуры холодного периода года' (TBL_3) заполнена: 8 значений
+2026-08-04 16:38:01 | WARNING | TBL_4 ('Таблица 5 Расчетные параметры температуры теплого периода года'): получено 0/6 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 5 Расчетные параметры температуры теплого периода года' (TBL_4) заполнена: 6 значений
+2026-08-04 16:38:01 | WARNING | TBL_5 ('Таблица 6 Средняя месячная и годовая температура поверхности почвы, С'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 6 Средняя месячная и годовая температура поверхности почвы, С' (TBL_5) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_6 ('Таблица 7 Расчетные характеристики температуры воздуха холодного периода года (метеостанция <Заполнить>)'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 7 Расчетные характеристики температуры воздуха холодного периода года (метеостанция <Заполнить>)' (TBL_6) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_7 ('Таблица 8 Расчетные характеристики температуры воздуха теплого периода года (метеостанция <Заполнить>)'): получено 0/5 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 8 Расчетные характеристики температуры воздуха теплого периода года (метеостанция <Заполнить>)' (TBL_7) заполнена: 5 значений
+2026-08-04 16:38:01 | WARNING | TBL_8 ('Таблица 9* Среднемесячная и годовая температура почвы по вытяжным термометрам по метеостанции <Заполнить>'): получено 0/104 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 9* Среднемесячная и годовая температура почвы по вытяжным термометрам по метеостанции <Заполнить>' (TBL_8) заполнена: 104 значений
+2026-08-04 16:38:01 | WARNING | TBL_9 ('Таблица 10 Месячное и годовое количество осадков, мм'): получено 0/15 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 10 Месячное и годовое количество осадков, мм' (TBL_9) заполнена: 15 значений
+2026-08-04 16:38:01 | WARNING | TBL_10 ('Таблица 11 Среднее месячное и годовое количество дней с осадками'): получено 0/27 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 11 Среднее месячное и годовое количество дней с осадками' (TBL_10) заполнена: 27 значений
+2026-08-04 16:38:01 | WARNING | TBL_11 ('Таблица 12 Суточный максимум осадков (мм) различной обеспеченности'): получено 0/6 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 12 Суточный максимум осадков (мм) различной обеспеченности' (TBL_11) заполнена: 6 значений
+2026-08-04 16:38:01 | WARNING | TBL_12 ('Таблица 13 Средняя декадная высота снежного покрова по постоянной рейке, см'): получено 0/26 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 13 Средняя декадная высота снежного покрова по постоянной рейке, см' (TBL_12) заполнена: 26 значений
+2026-08-04 16:38:01 | WARNING | TBL_13 ('Таблица 14 Средняя месячная и годовая скорость ветра, м/с'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 14 Средняя месячная и годовая скорость ветра, м/с' (TBL_13) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_14 ('Таблица 15 Максимальная скорость ветра, м/с'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 15 Максимальная скорость ветра, м/с' (TBL_14) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_15 ('Таблица 16 Максимальная скорость ветра с учетом порывов, м/с'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 16 Максимальная скорость ветра с учетом порывов, м/с' (TBL_15) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_16 ('Таблица 17 Среднее число дней с сильным ветром (более 15 м/с)'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 17 Среднее число дней с сильным ветром (более 15 м/с)' (TBL_16) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_17 ('Таблица 18 Наибольшее число дней с сильным ветром (более 15 м/с)'): получено 0/13 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 18 Наибольшее число дней с сильным ветром (более 15 м/с)' (TBL_17) заполнена: 13 значений
+2026-08-04 16:38:01 | WARNING | TBL_18 ('Таблица 19 Повторяемость (%) направления ветра и штилей'): получено 0/9 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 19 Повторяемость (%) направления ветра и штилей' (TBL_18) заполнена: 9 значений
+2026-08-04 16:38:01 | WARNING | TBL_19 ('Таблица 20 Среднее число дней с обледенением'): получено 0/26 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:38:01 | INFO | Таблица 'Таблица 20 Среднее число дней с обледенением' (TBL_19) заполнена: 26 значений
+2026-08-04 16:38:01 | INFO | Таблицы: заполнено 20/20
+2026-08-04 16:38:01 | INFO | Заполнение параграфов...
+2026-08-04 16:38:01 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:38:01 | DEBUG | send_request_headers.complete
+2026-08-04 16:38:01 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:38:01 | DEBUG | send_request_body.complete
+2026-08-04 16:38:01 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:38:03 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:38:03 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:38:03 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:38:03 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:38:03 | DEBUG | receive_response_body.complete
+2026-08-04 16:38:03 | DEBUG | response_closed.started
+2026-08-04 16:38:03 | DEBUG | response_closed.complete
+2026-08-04 16:38:03 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:38:03 | DEBUG | send_request_headers.complete
+2026-08-04 16:38:03 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:38:03 | DEBUG | send_request_body.complete
+2026-08-04 16:38:03 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:38:03 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:38:03 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:38:03 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:38:03 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:38:03 | DEBUG | receive_response_body.complete
+2026-08-04 16:38:03 | DEBUG | response_closed.started
+2026-08-04 16:38:03 | DEBUG | response_closed.complete
+2026-08-04 16:38:03 | INFO | Отбор контекста: 95/228 исходных элементов релевантны целям
+2026-08-04 16:38:03 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:38:03 | DEBUG | send_request_headers.complete
+2026-08-04 16:38:03 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:38:03 | DEBUG | send_request_body.complete
+2026-08-04 16:38:03 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:40:20 | DEBUG | receive_response_headers.failed exception=KeyboardInterrupt()
+2026-08-04 16:40:20 | DEBUG | response_closed.started
+2026-08-04 16:40:20 | DEBUG | response_closed.complete
+2026-08-04 16:40:56 | INFO | Модель: qwen3.6:35b | embeddings: bge-m3 | num_ctx: 65536
+2026-08-04 16:40:56 | INFO | Заполнение таблиц...
+2026-08-04 16:40:56 | DEBUG | connect_tcp.started host='127.0.0.1' port=11434 local_address=None timeout=None socket_options=None
+2026-08-04 16:40:56 | DEBUG | connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x73824d98b620>
+2026-08-04 16:40:56 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:40:56 | DEBUG | send_request_headers.complete
+2026-08-04 16:40:56 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:40:56 | DEBUG | send_request_body.complete
+2026-08-04 16:40:56 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:40:57 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:40:57 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:40:57 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:40:57 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:40:57 | DEBUG | receive_response_body.complete
+2026-08-04 16:40:57 | DEBUG | response_closed.started
+2026-08-04 16:40:57 | DEBUG | response_closed.complete
+2026-08-04 16:40:57 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:40:57 | DEBUG | send_request_headers.complete
+2026-08-04 16:40:57 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:40:57 | DEBUG | send_request_body.complete
+2026-08-04 16:40:57 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:40:57 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:40:57 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:40:57 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:40:57 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:40:57 | DEBUG | receive_response_body.complete
+2026-08-04 16:40:57 | DEBUG | response_closed.started
+2026-08-04 16:40:57 | DEBUG | response_closed.complete
+2026-08-04 16:40:57 | INFO | Отбор контекста: 17/29 исходных элементов релевантны целям
+2026-08-04 16:40:57 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:40:57 | DEBUG | send_request_headers.complete
+2026-08-04 16:40:57 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:40:57 | DEBUG | send_request_body.complete
+2026-08-04 16:40:57 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:47:10 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:47:10 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:47:10 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:47:10 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:47:10 | DEBUG | receive_response_body.complete
+2026-08-04 16:47:10 | DEBUG | response_closed.started
+2026-08-04 16:47:10 | DEBUG | response_closed.complete
+2026-08-04 16:47:10 | INFO | LLM: промпт 30234 симв. -> 372.5 сек, ответ 4919 симв.
+2026-08-04 16:47:10 | DEBUG | Сырой ответ LLM:
+TBL_0: –19,3
+TBL_0: –18,9
+TBL_0: –14,1
+TBL_0: –8,3
+TBL_0: –0,8
+TBL_0: 7,8
+TBL_0: 13,3
+TBL_0: 10,1
+TBL_0: 5,0
+TBL_0: –2,9
+TBL_0: –11,4
+TBL_0: –15,4
+TBL_0: –4,6
+TBL_1: -48,1
+TBL_1: -48,4
+TBL_1: -46,0
+TBL_1: -46,0
+TBL_1: -37,0
+TBL_1: -37,0
+TBL_1: -27,4
+TBL_1: -27,4
+TBL_1: -7,3
+TBL_1: -7,3
+TBL_1: -10,6
+TBL_1: -10,6
+TBL_1: -10,6
+TBL_2: 2,3
+TBL_2: 2,1
+TBL_2: 5,7
+TBL_2: 5,7
+TBL_2: 14,2
+TBL_2: 14,2
+TBL_2: 29,9
+TBL_2: 29,9
+TBL_2: 33,1
+TBL_2: 33,1
+TBL_2: 33,8
+TBL_2: 33,8
+TBL_2: 30,1
+TBL_3: –50
+TBL_3: –48
+TBL_3: –45
+TBL_3: –42
+TBL_3: Нет данных
+TBL_3: 227 суток
+TBL_3: Нет данных
+TBL_4: Нет данных
+TBL_4: Нет данных
+TBL_4: 33,8
+TBL_4: Нет данных
+TBL_4: Нет данных
+TBL_5: –20
+TBL_5: –19
+TBL_5: –14
+TBL_5: –8
+TBL_5: 0
+TBL_5: 9
+TBL_5: 15
+TBL_5: 11
+TBL_5: 5
+TBL_5: –3
+TBL_5: –11
+TBL_5: –16
+TBL_5: -4
+TBL_6: –50
+TBL_6: –48
+TBL_6: –45
+TBL_6: –42
+TBL_6: Нет данных
+TBL_6: –57
+TBL_6: Нет данных
+TBL_6: 227 суток
+TBL_6: Нет данных
+TBL_6: Нет данных
+TBL_6: Нет данных
+TBL_6: Нет данных
+TBL_6: Нет данных
+TBL_7: Нет данных
+TBL_7: Нет данных
+TBL_7: 18,9
+TBL_7: 33,8
+TBL_7: Нет данных
+TBL_8: –5,4
+TBL_8: –5,9
+TBL_8: –6,2
+TBL_8: –3,4
+TBL_8: –0,1
+TBL_8: 5,0
+TBL_8: 10,5
+TBL_8: 8,7
+TBL_8: 4,1
+TBL_8: 0,3
+TBL_8: –2,8
+TBL_8: –4,8
+TBL_8: 0,0
+TBL_8: –4,0
+TBL_8: –4,8
+TBL_8: –5,0
+TBL_8: –2,9
+TBL_8: –0,3
+TBL_8: 3,2
+TBL_8: 8,3
+TBL_8: 7,4
+TBL_8: 4,0
+TBL_8: 0,6
+TBL_8: –1,7
+TBL_8: –3,4
+TBL_8: 0,1
+TBL_8: –3,0
+TBL_8: –3,9
+TBL_8: –3,8
+TBL_8: –2,4
+TBL_8: –0,3
+TBL_8: 2,0
+TBL_8: 6,9
+TBL_8: 6,1
+TBL_8: 3,7
+TBL_8: 0,8
+TBL_8: –0,6
+TBL_8: –2,0
+TBL_8: 0,3
+TBL_8: –2,2
+TBL_8: –3,0
+TBL_8: –3,5
+TBL_8: –2,2
+TBL_8: –0,4
+TBL_8: 1,1
+TBL_8: 5,4
+TBL_8: 5,2
+TBL_8: 3,4
+TBL_8: 0,8
+TBL_8: –0,2
+TBL_8: –1,2
+TBL_8: 0,3
+TBL_8: –0,9
+TBL_8: –1,8
+TBL_8: –2,4
+TBL_8: –2,2
+TBL_8: –0,5
+TBL_8: 0,0
+TBL_8: 1,9
+TBL_8: 3,2
+TBL_8: 2,4
+TBL_8: 0,6
+TBL_8: 0,0
+TBL_8: –0,3
+TBL_8: 0,0
+TBL_8: –0,2
+TBL_8: –0,6
+TBL_8: –1,5
+TBL_8: –1,7
+TBL_8: –0,7
+TBL_8: –0,1
+TBL_8: 0,3
+TBL_8: 1,5
+TBL_8: 1,6
+TBL_8: 0,5
+TBL_8: 0,1
+TBL_8: 0,0
+TBL_8: –0,1
+TBL_8: –0,1
+TBL_8: –0,2
+TBL_8: –0,7
+TBL_8: –1,2
+TBL_8: –0,7
+TBL_8: –0,3
+TBL_8: –0,2
+TBL_8: 0,0
+TBL_8: 0,2
+TBL_8: 0,1
+TBL_8: 0,0
+TBL_8: –0,1
+TBL_8: –0,2
+TBL_8: –0,2
+TBL_8: –0,2
+TBL_8: –0,6
+TBL_8: –1,0
+TBL_8: –0,7
+TBL_8: –0,4
+TBL_8: –0,2
+TBL_8: –0,1
+TBL_8: –0,1
+TBL_8: –0,1
+TBL_8: –0,2
+TBL_8: –0,2
+TBL_8: –0,3
+TBL_9: 24
+TBL_9: 20
+TBL_9: 20
+TBL_9: 22
+TBL_9: 32
+TBL_9: 47
+TBL_9: 56
+TBL_9: 67
+TBL_9: 54
+TBL_9: 45
+TBL_9: 32
+TBL_9: 27
+TBL_9: Нет данных
+TBL_9: Нет данных
+TBL_9: 446
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_10: Нет данных
+TBL_11: Нет данных
+TBL_11: Нет данных
+TBL_11: Нет данных
+TBL_11: Нет данных
+TBL_11: Нет данных
+TBL_11: Нет данных
+TBL_12: [ПУСТО]
+TBL_12: [ПУСТО]
+TBL_12: [ПУСТО]
+TBL_12: 1
+TBL_12: 4
+TBL_12: 8
+TBL_12: 11
+TBL_12: 15
+TBL_12: 18
+TBL_12: 19
+TBL_12: 21
+TBL_12: 22
+TBL_12: 24
+TBL_12: 25
+TBL_12: 26
+TBL_12: 27
+TBL_12: 28
+TBL_12: 29
+TBL_12: 30
+TBL_12: 31
+TBL_12: 33
+TBL_12: 33
+TBL_12: 30
+TBL_12: 23
+TBL_12: 16
+TBL_12: 10
+TBL_13: 5,2
+TBL_13: 5,2
+TBL_13: 5,3
+TBL_13: 5,0
+TBL_13: 4,9
+TBL_13: 4,6
+TBL_13: 4,0
+TBL_13: 3,9
+TBL_13: 4,1
+TBL_13: 4,5
+TBL_13: 4,7
+TBL_13: 5,3
+TBL_13: 4,7
+TBL_14: 28ф
+TBL_14: 28ф
+TBL_14: 24ф
+TBL_14: 24ф
+TBL_14: 24а
+TBL_14: 16фа
+TBL_14: 15а
+TBL_14: 16ф
+TBL_14: 20ф
+TBL_14: 20ф
+TBL_14: 20ф
+TBL_14: 20ф
+TBL_14: 28ф
+TBL_15: 34фа
+TBL_15: 37а
+TBL_15: 34ф
+TBL_15: 26а
+TBL_15: 34а
+TBL_15: 25а
+TBL_15: 27а
+TBL_15: 22а
+TBL_15: 26а
+TBL_15: 24а
+TBL_15: 30а
+TBL_15: 28ф
+TBL_15: 37а
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_16: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_17: Нет данных
+TBL_18: 9
+TBL_18: 10
+TBL_18: 15
+TBL_18: 7
+TBL_18: 16
+TBL_18: 20
+TBL_18: 14
+TBL_18: 9
+TBL_18: 4
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+TBL_19: Нет данных
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 1Средняя месячная и годовая температура воздуха, С' (TBL_0) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 2Абсолютный минимум температуры воздуха, С' (TBL_1) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 3Абсолютный максимум температуры воздуха, С' (TBL_2) заполнена: 13 значений
+2026-08-04 16:47:10 | WARNING | TBL_3 ('Таблица 4 Расчетные параметры температуры холодного периода года'): получено 7/8 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 4 Расчетные параметры температуры холодного периода года' (TBL_3) заполнена: 8 значений
+2026-08-04 16:47:10 | WARNING | TBL_4 ('Таблица 5 Расчетные параметры температуры теплого периода года'): получено 5/6 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 5 Расчетные параметры температуры теплого периода года' (TBL_4) заполнена: 6 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 6 Средняя месячная и годовая температура поверхности почвы, С' (TBL_5) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 7 Расчетные характеристики температуры воздуха холодного периода года (метеостанция <Заполнить>)' (TBL_6) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 8 Расчетные характеристики температуры воздуха теплого периода года (метеостанция <Заполнить>)' (TBL_7) заполнена: 5 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 9* Среднемесячная и годовая температура почвы по вытяжным термометрам по метеостанции <Заполнить>' (TBL_8) заполнена: 104 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 10 Месячное и годовое количество осадков, мм' (TBL_9) заполнена: 15 значений
+2026-08-04 16:47:10 | WARNING | TBL_10 ('Таблица 11 Среднее месячное и годовое количество дней с осадками'): получено 26/27 значений. Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели.
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 11 Среднее месячное и годовое количество дней с осадками' (TBL_10) заполнена: 27 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 12 Суточный максимум осадков (мм) различной обеспеченности' (TBL_11) заполнена: 6 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 13 Средняя декадная высота снежного покрова по постоянной рейке, см' (TBL_12) заполнена: 26 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 14 Средняя месячная и годовая скорость ветра, м/с' (TBL_13) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 15 Максимальная скорость ветра, м/с' (TBL_14) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 16 Максимальная скорость ветра с учетом порывов, м/с' (TBL_15) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 17 Среднее число дней с сильным ветром (более 15 м/с)' (TBL_16) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 18 Наибольшее число дней с сильным ветром (более 15 м/с)' (TBL_17) заполнена: 13 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 19 Повторяемость (%) направления ветра и штилей' (TBL_18) заполнена: 9 значений
+2026-08-04 16:47:10 | INFO | Таблица 'Таблица 20 Среднее число дней с обледенением' (TBL_19) заполнена: 26 значений
+2026-08-04 16:47:10 | INFO | Таблицы: заполнено 20/20
+2026-08-04 16:47:10 | INFO | Заполнение параграфов...
+2026-08-04 16:47:10 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:47:10 | DEBUG | send_request_headers.complete
+2026-08-04 16:47:10 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:47:10 | DEBUG | send_request_body.complete
+2026-08-04 16:47:10 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:47:16 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:47:16 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:47:16 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:47:16 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:47:16 | DEBUG | receive_response_body.complete
+2026-08-04 16:47:16 | DEBUG | response_closed.started
+2026-08-04 16:47:16 | DEBUG | response_closed.complete
+2026-08-04 16:47:16 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:47:16 | DEBUG | send_request_headers.complete
+2026-08-04 16:47:16 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:47:16 | DEBUG | send_request_body.complete
+2026-08-04 16:47:16 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:47:17 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:47:17 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:47:17 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/embed "HTTP/1.1 200 OK"
+2026-08-04 16:47:17 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:47:17 | DEBUG | receive_response_body.complete
+2026-08-04 16:47:17 | DEBUG | response_closed.started
+2026-08-04 16:47:17 | DEBUG | response_closed.complete
+2026-08-04 16:47:17 | INFO | Отбор контекста: 95/228 исходных элементов релевантны целям
+2026-08-04 16:47:17 | DEBUG | send_request_headers.started request=<Request [b'POST']>
+2026-08-04 16:47:17 | DEBUG | send_request_headers.complete
+2026-08-04 16:47:17 | DEBUG | send_request_body.started request=<Request [b'POST']>
+2026-08-04 16:47:17 | DEBUG | send_request_body.complete
+2026-08-04 16:47:17 | DEBUG | receive_response_headers.started request=<Request [b'POST']>
+2026-08-04 16:51:00 | DEBUG | receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Tue, 04 Aug 2026 12:51:00 GMT'), (b'Transfer-Encoding', b'chunked')])
+2026-08-04 16:51:00 | INFO | HTTP Request: POST http://127.0.0.1:11434/api/chat "HTTP/1.1 200 OK"
+2026-08-04 16:51:00 | DEBUG | receive_response_body.started request=<Request [b'POST']>
+2026-08-04 16:51:00 | DEBUG | receive_response_body.complete
+2026-08-04 16:51:00 | DEBUG | response_closed.started
+2026-08-04 16:51:00 | DEBUG | response_closed.complete
+2026-08-04 16:51:00 | INFO | LLM: промпт 19511 симв. -> 223.2 сек, ответ 981 симв.
+2026-08-04 16:51:00 | DEBUG | Сырой ответ LLM:
+PARA_0: 1902(ПО-30-КО-ОП-ОП-1902) - Обустройство кустовых площадок №№ 8-бис, 17 Западно-Хоседаюского нефтяного месторождения ЦХП (блок №3) им. Д. Садецкого и увеличение пропускной способности нефтегазосборных трубопроводов
+PARA_1: Российская Федерация, Архангельская область, Ненецкий автономный округ, муниципальный район «Заполярный район»
+PARA_2: Хорей-Вер
+PARA_2: Хоседа-Хард
+PARA_3: Хоседа-Хард
+PARA_4: типично арктический
+PARA_5: 4,6
+PARA_6: января
+PARA_6: июль
+PARA_7: 33,8
+PARA_7: 57
+PARA_8: Хоседа-Хард
+PARA_9: Хоседа-Хард
+PARA_10: Хоседа-Хард
+PARA_11: Хоседа-Хард
+PARA_12: 446
+PARA_12: 1
+PARA_12: 102
+PARA_13: нормальная зона увлажнения
+PARA_14: 65
+PARA_14: Нет данных
+PARA_15: Нет данных
+PARA_16: 4,7
+PARA_17: 28
+PARA_17: 37
+PARA_18: 10,0
+PARA_19: юго-западное и восточное
+PARA_20: IГ
+PARA_21: V
+PARA_21: 2,5
+PARA_22: IV
+PARA_22: 0,48
+PARA_23: III
+PARA_23: 10
+PARA_24: Нет данных
+PARA_25: 33,8
+PARA_26: 0,48 кПа
+PARA_27: 10 мм
+PARA_28: 10
+PARA_28: 20
+PARA_29: Нет данных
+2026-08-04 16:51:00 | INFO | PARA_0 заполнен: 'Объект строительства (наименование) – <Заполнить>....'
+2026-08-04 16:51:00 | INFO | PARA_1 заполнен: 'Географическое (или административное) расположение...'
+2026-08-04 16:51:00 | INFO | PARA_2 заполнен: 'Характеристика климата составлена данным метеостан...'
+2026-08-04 16:51:00 | INFO | PARA_3 заполнен: 'Для проектирования рекомендуется принимать характе...'
+2026-08-04 16:51:00 | INFO | PARA_4 заполнен: 'Климат района изысканий — <Заполнить>....'
+2026-08-04 16:51:00 | INFO | PARA_5 заполнен: 'Среднегодовая температура воздуха равняется минус ...'
+2026-08-04 16:51:00 | INFO | PARA_6 заполнен: 'Наиболее холодным месяцем является <Заполнить>, на...'
+2026-08-04 16:51:00 | INFO | PARA_7 заполнен: 'Максимальная температура воздуха за весь период на...'
+2026-08-04 16:51:00 | INFO | PARA_8 заполнен: 'Расчетные характеристики температуры воздуха в соо...'
+2026-08-04 16:51:00 | INFO | PARA_9 заполнен: 'Таблица 7 Расчетные характеристики температуры воз...'
+2026-08-04 16:51:00 | INFO | PARA_10 заполнен: 'Таблица 8 Расчетные характеристики температуры воз...'
+2026-08-04 16:51:00 | INFO | PARA_11 заполнен: 'Таблица 9* Среднемесячная и годовая температура по...'
+2026-08-04 16:51:00 | INFO | PARA_12 заполнен: 'В среднем за год выпадает <Заполнить> мм осадков. ...'
+2026-08-04 16:51:00 | INFO | PARA_13 заполнен: 'Зона влажности – <Заполнить> (по СП 50.13330.2012,...'
+2026-08-04 16:51:00 | INFO | PARA_14 заполнен: 'Расчетная максимальная высота снежного покрова обе...'
+2026-08-04 16:51:00 | INFO | PARA_15 заполнен: 'Расчетная высота снегового покрова с вероятностью ...'
+2026-08-04 16:51:00 | INFO | PARA_16 заполнен: 'Среднегодовая скорость ветра в районе изысканий со...'
+2026-08-04 16:51:00 | INFO | PARA_17 заполнен: 'Абсолютный наблюденный максимум скорости ветра за ...'
+2026-08-04 16:51:00 | INFO | PARA_18 заполнен: 'Скорость ветра, повторяемость превышения которой с...'
+2026-08-04 16:51:00 | INFO | PARA_19 заполнен: 'Преобладающее годовое направление ветра – <Заполни...'
+2026-08-04 16:51:00 | INFO | PARA_20 заполнен: 'В соответствии с СП 131.13330.2020 «Строительная к...'
+2026-08-04 16:51:00 | INFO | PARA_21 заполнен: 'по весу снегового покрова (Карта 1) – <Заполнить>;...'
+2026-08-04 16:51:00 | INFO | PARA_22 заполнен: 'по давлению ветра (Карта 2) – <Заполнить>; нормати...'
+2026-08-04 16:51:00 | INFO | PARA_23 заполнен: 'по толщине стенки гололеда (Карта 3) – <Заполнить>...'
+2026-08-04 16:51:00 | INFO | PARA_24 заполнен: 'по нормативным значениям минимальной температуры в...'
+2026-08-04 16:51:00 | INFO | PARA_25 заполнен: 'по нормативным значениям максимальной температуры ...'
+2026-08-04 16:51:00 | INFO | PARA_26 заполнен: 'по ветровому давлению – <Заполнить>;...'
+2026-08-04 16:51:00 | INFO | PARA_27 заполнен: 'по толщине стенке гололеда – <Заполнить>;...'
+2026-08-04 16:51:00 | INFO | PARA_28 заполнен: 'по среднегодовой продолжительности гроз – от <Запо...'
+2026-08-04 16:51:00 | INFO | PARA_29 заполнен: 'по пляске проводов – <Заполнить>....'
+2026-08-04 16:51:00 | INFO | Параграфы: заполнено 30/30
+2026-08-04 16:51:00 | INFO | Готово: output/outputemb3.docx (за 603.5 сек)

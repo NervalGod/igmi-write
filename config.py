@@ -18,7 +18,6 @@ class Config:
     num_predict: int = -1
     log_file: str = "generation.log"
 
-
 def load_config(path: str = "config.yaml") -> Config:
     with open(path, "r", encoding="utf-8") as f:
         raw = yaml.safe_load(f)
