@@ -118,11 +118,8 @@ def table_signature(table: TableBlock) -> str:
     Компактное текстовое представление таблицы для эмбеддинга:
     название + заголовки (ищет реальные заголовки, а не просто первую строку).
     """
-    header_idx = _find_header_row(table.data)
-    header_row = table.data[header_idx] if table.data else []
-    header_text = " | ".join(c.strip() for c in header_row if c.strip())
-    sig = f"{table.name}. {header_text}".strip()
-    logger.debug(f"Сигнатура таблицы '{table.name}': {sig[:80]}...")
+    sig = table.name.strip()
+    logger.debug(f"Сигнатура таблицы: {sig[:80]}")
     return sig
 
 
