@@ -1,39 +1,5 @@
 """
 Заполнение шаблона данными из исходного документа.
-
-АРХИТЕКТУРА: каждый тип данных (таблицы / параграфы) обрабатывается в ДВА
-независимых шага, которые можно вызывать по отдельности:
-
-  extract_*(...)  -> List[...ExtractionResult]
-      Только извлечение: эмбеддинг-поиск релевантного контекста + вызов LLM
-      + парсинг ответа. НЕ трогает docx вообще, возвращает чистые данные
-      в памяти (или из кэша — см. save_extraction/load_extraction).
-
-  apply_*(...)  -> int
-      Только запись: берёт готовый список результатов извлечения и кладёт
-      значения в объекты python-docx. НЕ знает про LLM и эмбеддинги вообще —
-      чисто механическая операция, которая не может провалиться "непонятно
-      почему", как раньше бывало на последнем пакете таблиц.
-
-Зачем это разделение:
-  - Результат extract_* можно сохранить в JSON (save_extraction) — если
-    apply_* или сохранение .docx упадёт, не нужно заново гонять LLM
-    (минуты работы), можно просто перезапустить со второго шага.
-  - apply_* тестируется без реальной LLM/Ollama — просто передать
-    фейковый список результатов.
-  - Если понадобится валидация данных перед записью (например, проверка,
-    что значение похоже на число) — она встаёт между extract_* и apply_*,
-    не трогая логику ни того, ни другого.
-
-fill_tables()/fill_paragraphs() оставлены как тонкие обёртки "extract + apply
-одним вызовом" — для случаев, когда разделение не нужно.
-
-Архитектура вызовов LLM (без изменений от предыдущих итераций): РОВНО ДВА
-вызова за весь прогон — один batch на все таблицы, один на все параграфы.
-Дробление на много мелких вызовов проверено как медленнее (фиксированный
-оверхед на вызов). Контекст для каждого вызова сжимается эмбеддингами
-(top-K релевантных исходных элементов на цель, объединение по всем целям),
-а не отправляется весь документ целиком.
 """
 
 import json
@@ -47,25 +13,22 @@ from parser import ParagraphBlock, TableBlock, is_empty_cell, table_signature
 
 logger = logging.getLogger(__name__)
 
-FALLBACK_VALUE = "Нет данных"
-
-
-# ------------------------------------------------------- результаты извлечения --
+FALLBACK_VALUE = "?"
 
 @dataclass
 class TableExtractionResult:
-    """Чистые данные для одной целевой таблицы — без всякой связи с docx."""
-    table_index: int   # позиция в списке template_tables
-    table_name: str     # для логов/отладки, не используется при apply
-    values: List[str]   # значения по порядку обхода пустых ячеек
+    """Чистые данные для одной целевой таблицы"""
+    table_index: int            # позиция в списке template_tables
+    table_name: str             # логирование
+    values: List[str]           # значения по порядку обхода пустых ячеек
 
 
 @dataclass
 class ParagraphExtractionResult:
     """Чистые данные для одного целевого параграфа — без всякой связи с docx."""
-    para_index: int      # позиция в списке targets (параграфов с <Заполнить>)
-    original_text: str    # для логов/отладки
-    values: List[str]     # значения по порядку тегов <Заполнить>
+    para_index: int             # позиция в списке targets (параграфов с <Заполнить>)
+    original_text: str          # логирование
+    values: List[str]           # значения по порядку тегов <Заполнить>
 
 
 def save_extraction(
@@ -73,7 +36,7 @@ def save_extraction(
     table_results: List[TableExtractionResult],
     paragraph_results: List[ParagraphExtractionResult],
 ) -> None:
-    """Сохраняет результат извлечения в JSON — чтобы не гонять LLM заново при сбое на этапе записи в docx."""
+    """Сохраняет результат извлечения в JSON - чтобы не гонять LLM заново при сбое на этапе записи в docx."""
     data = {
         "tables": [asdict(r) for r in table_results],
         "paragraphs": [asdict(r) for r in paragraph_results],
@@ -95,9 +58,6 @@ def load_extraction(path: str) -> Tuple[List[TableExtractionResult], List[Paragr
     )
     return table_results, paragraph_results
 
-
-# ------------------------------------------------------------- общие утилиты --
-
 def _select_relevant(
     source_items: List,
     source_signatures: List[str],
@@ -108,7 +68,7 @@ def _select_relevant(
     """
     Возвращает подмножество source_items, релевантное хотя бы одной цели
     (union top-K кандидатов по каждой цели), с сохранением исходного
-    порядка. Если эмбеддинги недоступны/пусты — возвращает всё как есть
+    порядка. Если эмбеддинги недоступны/пусты - возвращает всё как есть
     (безопасный fallback, ничего не теряем).
     """
     if not source_items or not target_signatures:
@@ -158,18 +118,10 @@ def _parse_id_response(response: str, ids: List[str]) -> Dict[str, List[str]]:
                 break
     return result
 
-
-# ---------------------------------------------------------------- tables --
-
 def _collapse_consecutive_duplicates(row: List[str], min_run: int = 3) -> List[str]:
     """
-    Схлопывает ПОДРЯД идущие одинаковые непустые значения (артефакт
-    объединённых ячеек в .docx: python-docx дублирует текст merged-cell
-    в каждую физическую ячейку под ней). Оставляет текст в первой ячейке
-    серии, остальные — пустыми.
-
-    min_run=3: схлопываем только серии от 3 повторов подряд, чтобы не
-    задеть случайное совпадение двух соседних значений в реальных данных.
+    Очистка данных заголовков таблиц для последующей подачи в промпт (для объединённых ячеек)
+    Схлопывает повторы начиная с min_run
     """
     result = list(row)
     n = len(result)
@@ -192,13 +144,7 @@ def _collapse_consecutive_duplicates(row: List[str], min_run: int = 3) -> List[s
 
 def _table_to_text(table: TableBlock, tid: str) -> str:
     """
-    Markdown-таблица вместо построчного 'Строка N: a | b | c'. Строки
-    прогоняются через схлопывание подряд идущих дублей (объединённые
-    ячейки .docx) — не меняет table.data, только то, что видит LLM.
-
-    Статус "нужно заполнить" ([ПУСТО]) определяется по ИСХОДНОЙ ячейке,
-    а не по результату схлопывания — иначе схлопнутый дубль стал бы
-    неотличим от настоящей пустой ячейки.
+    Markdown-таблица
     """
     lines = [f"**[{tid}] {table.name}**", ""]
 
@@ -229,9 +175,8 @@ def extract_table_values(
     top_k_per_target: int = 3,
 ) -> List[TableExtractionResult]:
     """
-    ШАГ 1 (только извлечение). Один вызов LLM на ВСЕ таблицы шаблона сразу.
-    НЕ трогает docx — возвращает список результатов, которые apply_table_extraction
-    (или save_extraction) обработает дальше.
+    Первая часть алгоритма 
+    Возвращает ответ llm
     """
     results: List[TableExtractionResult] = []
 
@@ -239,7 +184,7 @@ def extract_table_values(
         logger.info("Таблицы в шаблоне не найдены, пропуск.")
         return results
     if not source_tables:
-        logger.warning("В исходнике нет таблиц — заполнять нечем.")
+        logger.warning("В исходнике нет таблиц - заполнять нечем.")
         return results
 
     relevant_sources = _select_relevant(
@@ -264,7 +209,7 @@ def extract_table_values(
         logger.info("Все таблицы шаблона уже заполнены, LLM не вызываем.")
         return results
 
-    prompt = f"""Ты — ассистент по заполнению документов.
+    prompt = f"""Ты - ассистент по заполнению документов.
 У тебя есть ИСХОДНЫЕ ТАБЛИЦЫ с данными и ЦЕЛЕВЫЕ ТАБЛИЦЫ из шаблона, которые нужно заполнить.
 
 === ИСХОДНЫЕ ТАБЛИЦЫ ===
@@ -276,7 +221,7 @@ def extract_table_values(
 ЗАДАЧА:
 Для каждой целевой таблицы (TBL_0, TBL_1, ...) найди среди исходных таблиц ту,
 которая семантически соответствует (названия и заголовки могут не совпадать
-дословно — ориентируйся на смысл). Перечисли значения для заполнения пустых
+дословно - ориентируйся на смысл). Перечисли значения для заполнения пустых
 ячеек [ПУСТО] в порядке обхода: сверху вниз, слева направо.
 
 ОБЯЗАТЕЛЬНО выведи хотя бы одну строку для КАЖДОГО из следующих ID, без
@@ -287,8 +232,8 @@ def extract_table_values(
 
 ФОРМАТ ОТВЕТА (СТРОГО):
 Каждое значение на отдельной строке: "TBL_X: значение".
-Если пустых ячеек несколько — несколько строк с одинаковым ID по порядку.
-Никаких пояснений, приветствий, нумерации или markdown — только строки "TBL_X: значение".
+Если пустых ячеек несколько - несколько строк с одинаковым ID по порядку.
+Никаких пояснений, приветствий, нумерации или markdown - только строки "TBL_X: значение".
 
 ПРИМЕР:
 TBL_0: 15.5
@@ -299,7 +244,7 @@ TBL_2: {FALLBACK_VALUE}"""
     try:
         response = request(prompt, model=llm_model, **llm_options)
     except Exception:
-        logger.exception("Запрос к LLM по таблицам завершился ошибкой — извлечение не выполнено")
+        logger.exception("Запрос к LLM по таблицам завершился ошибкой - извлечение не выполнено")
         return results
 
     parsed = _parse_id_response(response, list(empty_counts.keys()))
@@ -314,7 +259,7 @@ TBL_2: {FALLBACK_VALUE}"""
         if len(values) < expected:
             logger.warning(
                 f"{tid} ('{template_table.name}'): получено {len(values)}/{expected} значений. "
-                f"Если 0 — смотрите generation.log (DEBUG) на сырой ответ модели."
+                f"Если 0 - смотрите generation.log (DEBUG) на сырой ответ модели."
             )
             values = values + [FALLBACK_VALUE] * (expected - len(values))
         elif len(values) > expected:
@@ -328,8 +273,7 @@ TBL_2: {FALLBACK_VALUE}"""
 
 def apply_table_extraction(template_tables: List[TableBlock], results: List[TableExtractionResult]) -> int:
     """
-    ШАГ 2 (только запись). Механически кладёт готовые значения в docx.
-    Ничего не знает про LLM/эмбеддинги — можно тестировать на фейковых данных.
+    Вторая часть алгоритма - парсинг в docx
     """
     filled = 0
     for result in results:
@@ -371,9 +315,6 @@ def fill_tables(
     filled = apply_table_extraction(template_tables, results)
     logger.info(f"Таблицы: заполнено {filled}/{len(template_tables)}")
 
-
-# ------------------------------------------------------------ paragraphs --
-
 def _replace_placeholders(text: str, values: List[str]) -> str:
     parts = text.split("<Заполнить>")
     result = parts[0]
@@ -392,11 +333,8 @@ def extract_paragraph_values(
     top_k_per_target: int = 8,
 ) -> List[ParagraphExtractionResult]:
     """
-    ШАГ 1 (только извлечение). targets — уже отфильтрованные параграфы шаблона
-    с тегом <Заполнить> (фильтрацию делает вызывающий код — fill_paragraphs
-    или main.py — чтобы один и тот же список targets использовался и здесь,
-    и в apply_paragraph_extraction: para_index ссылается на позицию в НЁМ,
-    а не в полном списке параграфов шаблона).
+    Первая часть алгоритма работы с параграфами
+    Возвращает ответ llm
     """
     results: List[ParagraphExtractionResult] = []
 
@@ -404,7 +342,7 @@ def extract_paragraph_values(
         logger.info("Теги <Заполнить> не найдены, пропуск.")
         return results
     if not source_paragraphs:
-        logger.warning("В исходнике нет параграфов — заполнять нечем.")
+        logger.warning("В исходнике нет параграфов - заполнять нечем.")
         return results
 
     relevant_sources = _select_relevant(
@@ -424,7 +362,7 @@ def extract_paragraph_values(
         counts[pid] = t.text.count("<Заполнить>")
         tasks_text_parts.append(f"[{pid}] (требуется {counts[pid]} значений): {t.text}")
 
-    prompt = f"""Ты — ассистент по заполнению документов.
+    prompt = f"""Ты - ассистент по заполнению документов.
 У тебя есть ИСХОДНЫЕ ДАННЫЕ и список ЦЕЛЕВЫХ ФРАГМЕНТОВ шаблона, в которых
 нужно заменить тег <Заполнить>.
 
@@ -437,13 +375,13 @@ def extract_paragraph_values(
 ЗАДАЧА:
 Для каждого ID найди в исходных данных подходящую по смыслу информацию для
 замены тега <Заполнить>. Соблюдай падеж, число и лаконичность.
-Если данных нет — используй "{FALLBACK_VALUE}".
+Если данных нет - используй "{FALLBACK_VALUE}".
 
 ФОРМАТ ОТВЕТА (СТРОГО):
 Каждое значение на отдельной строке: "ID: значение".
-Если в одном фрагменте несколько тегов — несколько строк с одинаковым ID
+Если в одном фрагменте несколько тегов - несколько строк с одинаковым ID
 в порядке следования тегов.
-Никаких пояснений, приветствий, нумерации или markdown — только строки "ID: значение".
+Никаких пояснений, приветствий, нумерации или markdown - только строки "ID: значение".
 
 ПРИМЕР:
 PARA_0: Иванов Иван Иванович
@@ -453,7 +391,7 @@ PARA_1: {FALLBACK_VALUE}"""
     try:
         response = request(prompt, model=llm_model, **llm_options)
     except Exception:
-        logger.exception("Запрос к LLM по параграфам завершился ошибкой — извлечение не выполнено")
+        logger.exception("Запрос к LLM по параграфам завершился ошибкой - извлечение не выполнено")
         return results
 
     parsed = _parse_id_response(response, list(counts.keys()))
@@ -477,8 +415,7 @@ PARA_1: {FALLBACK_VALUE}"""
 
 def apply_paragraph_extraction(targets: List[ParagraphBlock], results: List[ParagraphExtractionResult]) -> int:
     """
-    ШАГ 2 (только запись). targets — тот же список, что передавался в
-    extract_paragraph_values (para_index ссылается на позиции в нём).
+    Вторая часть работы алгоритма с параграфами - парсинг в docx
     """
     filled = 0
     for result in results:

@@ -23,10 +23,6 @@ def setup_logging(log_file: str) -> str:
     """
     abs_path = os.path.abspath(log_file)
 
-    # print(), а не logger — на случай если логирование ещё не настроено
-    # или настроится не полностью, пользователь всё равно увидит, КУДА
-    # реально пишутся логи (частая причина "логи не появляются" — скрипт
-    # запущен из другой рабочей директории, чем ожидает пользователь).
     print(f"[log] Лог-файл: {abs_path}")
 
     _formatter = logging.Formatter(
@@ -34,9 +30,6 @@ def setup_logging(log_file: str) -> str:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # mode="w" сам усекает файл при открытии — не нужен отдельный os.remove(),
-    # который может упасть (файл открыт в другой программе) или создать гонку
-    # между удалением и пересозданием.
     _file_handler = logging.FileHandler(abs_path, mode="w", encoding="utf-8")
     _file_handler.setLevel(logging.DEBUG)
     _file_handler.setFormatter(_formatter)
@@ -45,12 +38,6 @@ def setup_logging(log_file: str) -> str:
     _console_handler.setLevel(logging.INFO)
     _console_handler.setFormatter(_formatter)
 
-    # force=True — КРИТИЧНО: без него basicConfig ничего не делает, если
-    # у root-логгера уже есть хоть один хендлер (например, повешенный
-    # неявно какой-то из импортированных библиотек до этого вызова).
-    # Без force=True в таком случае наш file_handler просто не подключится,
-    # и лог-файл останется пустым/нетронутым — ровно то поведение, которое
-    # вы наблюдали.
     logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handler], force=True)
 
     return abs_path
@@ -87,8 +74,6 @@ def main() -> None:
     template_blocks = parse(template_doc, with_refs=True)
 
     template_tables = tables_of(template_blocks)
-    # targets вычисляем ОДИН раз и переиспользуем для extract И apply —
-    # para_index в результатах извлечения ссылается на позиции именно в этом списке.
     template_paragraph_targets = [p for p in paragraphs_of(template_blocks) if "<Заполнить>" in p.text]
 
     llm_options = dict(
@@ -98,7 +83,6 @@ def main() -> None:
         num_predict=cfg.num_predict,
     )
 
-    # --- ШАГ 1: извлечение (либо из кэша, либо реальными вызовами LLM) ---
     if cfg.use_extraction_cache and cfg.extraction_cache_path and os.path.exists(cfg.extraction_cache_path):
         logger.info(f"Кэш найден — загружаем результаты извлечения вместо вызова LLM: {cfg.extraction_cache_path}")
         table_results, paragraph_results = load_extraction(cfg.extraction_cache_path)
@@ -124,7 +108,6 @@ def main() -> None:
         if cfg.extraction_cache_path:
             save_extraction(cfg.extraction_cache_path, table_results, paragraph_results)
 
-    # --- ШАГ 2: запись в docx (чисто механическая, LLM тут больше не участвует) ---
     logger.info("Запись в шаблон: таблицы...")
     filled_tables = apply_table_extraction(template_tables, table_results)
     logger.info(f"Таблицы: заполнено {filled_tables}/{len(template_tables)}")
@@ -140,7 +123,6 @@ def main() -> None:
     logger.info(f"УСПЕШНО: {cfg.output_path}")
     logger.info(f"Общее время обработки: {elapsed:.1f} сек")
     logger.info("=" * 80)
-
 
 if __name__ == "__main__":
     main()

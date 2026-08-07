@@ -1,10 +1,5 @@
 """
 Парсинг .docx в список блоков (параграфы и таблицы).
-
-Если with_refs=True, каждый блок хранит ссылку на исходный объект
-python-docx (Paragraph / Table), что позволяет потом писать результат
-заполнения напрямую в документ без повторного поиска "какой это индекс
-в doc.tables/doc.paragraphs" — источник багов в исходной версии.
 """
 
 import logging
@@ -84,18 +79,15 @@ def parse(document: DocumentObject, with_refs: bool = False) -> List[Block]:
 
 def _is_likely_header(row: List[str], column_count: int) -> bool:
     """
-    Эвристика: строка вероятно заголовок, если:
-    - большинство ячеек короткие и непустые (как "I", "II", "Январь")
-    - количество непустых ячеек примерно совпадает с числом столбцов
-    (заголовок обычно полный, данные часто разреженные).
+    Эвристика для хеддера
     """
     if not row:
         return False
     non_empty = [c for c in row if c.strip()]
-    if len(non_empty) < column_count * 0.7:  # меньше 70% заполнено — вероятно не заголовок
+    if len(non_empty) < column_count * 0.7:     # меньше 70% заполнено - вероятно не заголовок
         return False
     avg_len = sum(len(c) for c in non_empty) / len(non_empty) if non_empty else 0
-    return avg_len < 20  # средняя длина ячейки < 20 символов — похоже на заголовок
+    return avg_len < 20                         # средняя длина ячейки < 20 символов - похоже на заголовок
 
 
 def _find_header_row(data: List[List[str]]) -> int:
@@ -115,8 +107,7 @@ def _find_header_row(data: List[List[str]]) -> int:
 
 def table_signature(table: TableBlock) -> str:
     """
-    Компактное текстовое представление таблицы для эмбеддинга:
-    название + заголовки (ищет реальные заголовки, а не просто первую строку).
+    Компактное текстовое представление таблицы для эмбеддинга: название + заголовки
     """
     sig = table.name.strip()
     logger.debug(f"Сигнатура таблицы: {sig[:80]}")
