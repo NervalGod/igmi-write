@@ -14,9 +14,12 @@ class Config:
     embed_model: str = "bge-m3"
     num_ctx: int = 8192
     temperature: float = 0.0
-    keep_alive: str = "30m"
+    keep_alive: str = "3m"
     num_predict: int = -1
     log_file: str = "generation.log"
+    extraction_cache_path: str = "extraction_cache.json"
+    use_extraction_cache: bool = False
+
 
 def load_config(path: str = "config.yaml") -> Config:
     with open(path, "r", encoding="utf-8") as f:
@@ -38,4 +41,6 @@ def load_config(path: str = "config.yaml") -> Config:
         keep_alive=raw.get("keep_alive", "30m"),
         num_predict=raw.get("num_predict", -1),
         log_file=raw.get("log_file", "generation.log"),
+        extraction_cache_path=raw.get("extraction_cache_path", "extraction_cache.json"),
+        use_extraction_cache=raw.get("use_extraction_cache", False),
     )

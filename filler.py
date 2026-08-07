@@ -1,28 +1,45 @@
 """
 Заполнение шаблона данными из исходного документа.
 
-Архитектура: РОВНО ДВА вызова LLM за весь прогон — один batch-запрос на
-все таблицы, один batch-запрос на все параграфы. Это осознанный выбор:
-на практике много мелких вызовов (по одному на элемент) оказалось в разы
-медленнее двух пакетных — у каждого вызова к локальной LLM есть заметный
-фиксированный оверхед, и дробить его дальше вредно для скорости.
+АРХИТЕКТУРА: каждый тип данных (таблицы / параграфы) обрабатывается в ДВА
+независимых шага, которые можно вызывать по отдельности:
 
-Чтобы не пересылать в каждом из двух вызовов ВЕСЬ исходник (это и есть
-основной источник долгого prefill на большом документе), перед сборкой
-промпта исходные блоки предварительно фильтруются через эмбеддинги:
-для каждой цели (таблица/параграф шаблона) находится top-K похожих по
-смыслу исходных элементов, а в промпт идёт объединение (union) всех
-таких кандидатов по всем целям — а не весь документ целиком.
+  extract_*(...)  -> List[...ExtractionResult]
+      Только извлечение: эмбеддинг-поиск релевантного контекста + вызов LLM
+      + парсинг ответа. НЕ трогает docx вообще, возвращает чистые данные
+      в памяти (или из кэша — см. save_extraction/load_extraction).
 
-Итоговое решение "что чему соответствует и как разложить данные"
-по-прежнему полностью остаётся за LLM: она получает несколько
-кандидатов на цель и сама выбирает семантически подходящий, даже если
-названия/структура не совпадают дословно. Эмбеддинги только сужают
-поле поиска, а не подменяют его.
+  apply_*(...)  -> int
+      Только запись: берёт готовый список результатов извлечения и кладёт
+      значения в объекты python-docx. НЕ знает про LLM и эмбеддинги вообще —
+      чисто механическая операция, которая не может провалиться "непонятно
+      почему", как раньше бывало на последнем пакете таблиц.
+
+Зачем это разделение:
+  - Результат extract_* можно сохранить в JSON (save_extraction) — если
+    apply_* или сохранение .docx упадёт, не нужно заново гонять LLM
+    (минуты работы), можно просто перезапустить со второго шага.
+  - apply_* тестируется без реальной LLM/Ollama — просто передать
+    фейковый список результатов.
+  - Если понадобится валидация данных перед записью (например, проверка,
+    что значение похоже на число) — она встаёт между extract_* и apply_*,
+    не трогая логику ни того, ни другого.
+
+fill_tables()/fill_paragraphs() оставлены как тонкие обёртки "extract + apply
+одним вызовом" — для случаев, когда разделение не нужно.
+
+Архитектура вызовов LLM (без изменений от предыдущих итераций): РОВНО ДВА
+вызова за весь прогон — один batch на все таблицы, один на все параграфы.
+Дробление на много мелких вызовов проверено как медленнее (фиксированный
+оверхед на вызов). Контекст для каждого вызова сжимается эмбеддингами
+(top-K релевантных исходных элементов на цель, объединение по всем целям),
+а не отправляется весь документ целиком.
 """
 
+import json
 import logging
-from typing import Dict, List
+from dataclasses import asdict, dataclass, field
+from typing import Dict, List, Optional, Tuple
 
 from embeddings import embed_texts, most_similar
 from llm import request
@@ -32,6 +49,54 @@ logger = logging.getLogger(__name__)
 
 FALLBACK_VALUE = "Нет данных"
 
+
+# ------------------------------------------------------- результаты извлечения --
+
+@dataclass
+class TableExtractionResult:
+    """Чистые данные для одной целевой таблицы — без всякой связи с docx."""
+    table_index: int   # позиция в списке template_tables
+    table_name: str     # для логов/отладки, не используется при apply
+    values: List[str]   # значения по порядку обхода пустых ячеек
+
+
+@dataclass
+class ParagraphExtractionResult:
+    """Чистые данные для одного целевого параграфа — без всякой связи с docx."""
+    para_index: int      # позиция в списке targets (параграфов с <Заполнить>)
+    original_text: str    # для логов/отладки
+    values: List[str]     # значения по порядку тегов <Заполнить>
+
+
+def save_extraction(
+    path: str,
+    table_results: List[TableExtractionResult],
+    paragraph_results: List[ParagraphExtractionResult],
+) -> None:
+    """Сохраняет результат извлечения в JSON — чтобы не гонять LLM заново при сбое на этапе записи в docx."""
+    data = {
+        "tables": [asdict(r) for r in table_results],
+        "paragraphs": [asdict(r) for r in paragraph_results],
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    logger.info(f"Результаты извлечения сохранены в кэш: {path}")
+
+
+def load_extraction(path: str) -> Tuple[List[TableExtractionResult], List[ParagraphExtractionResult]]:
+    """Загружает результат извлечения из JSON вместо повторного вызова LLM."""
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    table_results = [TableExtractionResult(**d) for d in data.get("tables", [])]
+    paragraph_results = [ParagraphExtractionResult(**d) for d in data.get("paragraphs", [])]
+    logger.info(
+        f"Результаты извлечения загружены из кэша: {path} "
+        f"({len(table_results)} таблиц, {len(paragraph_results)} параграфов)"
+    )
+    return table_results, paragraph_results
+
+
+# ------------------------------------------------------------- общие утилиты --
 
 def _select_relevant(
     source_items: List,
@@ -58,21 +123,18 @@ def _select_relevant(
 
     relevant_idx = set()
     logger.debug(f"_select_relevant: ищу релевантные по {len(target_signatures)} целям из {len(source_items)} исходных")
-    
+
     for target_i, tv in enumerate(target_vectors):
         top_indices = most_similar(tv, source_vectors, top_k=top_k_per_target)
         logger.debug(f"  Цель {target_i} '{target_signatures[target_i][:60]}...' -> источники {top_indices}")
         relevant_idx.update(top_indices)
 
     kept = sorted(relevant_idx)
-    logger.info(
-        f"Отбор контекста: выбрано {len(kept)}/{len(source_items)} исходных элементов "
-        f"(индексы {kept})"
-    )
+    logger.info(f"Отбор контекста: выбрано {len(kept)}/{len(source_items)} исходных элементов (индексы {kept})")
     for idx in kept:
         if idx < len(source_signatures):
             logger.debug(f"  Выбран источник {idx}: '{source_signatures[idx][:60]}...'")
-    
+
     return [source_items[i] for i in kept]
 
 
@@ -99,48 +161,86 @@ def _parse_id_response(response: str, ids: List[str]) -> Dict[str, List[str]]:
 
 # ---------------------------------------------------------------- tables --
 
+def _collapse_consecutive_duplicates(row: List[str], min_run: int = 3) -> List[str]:
+    """
+    Схлопывает ПОДРЯД идущие одинаковые непустые значения (артефакт
+    объединённых ячеек в .docx: python-docx дублирует текст merged-cell
+    в каждую физическую ячейку под ней). Оставляет текст в первой ячейке
+    серии, остальные — пустыми.
+
+    min_run=3: схлопываем только серии от 3 повторов подряд, чтобы не
+    задеть случайное совпадение двух соседних значений в реальных данных.
+    """
+    result = list(row)
+    n = len(result)
+    i = 0
+    while i < n:
+        val = result[i].strip()
+        if not val:
+            i += 1
+            continue
+        j = i
+        while j + 1 < n and result[j + 1].strip() == val:
+            j += 1
+        run_len = j - i + 1
+        if run_len >= min_run:
+            for k in range(i + 1, j + 1):
+                result[k] = ""
+        i = j + 1
+    return result
+
+
 def _table_to_text(table: TableBlock, tid: str) -> str:
-    lines = [f"[{tid}] Название: {table.name}"]
-    for i, row in enumerate(table.data):
-        cells = ["[ПУСТО]" if is_empty_cell(c) else c.strip() for c in row]
-        lines.append(f"  Строка {i + 1}: {' | '.join(cells)}")
+    """
+    Markdown-таблица вместо построчного 'Строка N: a | b | c'. Строки
+    прогоняются через схлопывание подряд идущих дублей (объединённые
+    ячейки .docx) — не меняет table.data, только то, что видит LLM.
+
+    Статус "нужно заполнить" ([ПУСТО]) определяется по ИСХОДНОЙ ячейке,
+    а не по результату схлопывания — иначе схлопнутый дубль стал бы
+    неотличим от настоящей пустой ячейки.
+    """
+    lines = [f"**[{tid}] {table.name}**", ""]
+
+    if table.data:
+        col_count = max(len(r) for r in table.data)
+        for row_num, row in enumerate(table.data):
+            collapsed = _collapse_consecutive_duplicates(row)
+            display = []
+            for original, shown in zip(row, collapsed):
+                if is_empty_cell(original):
+                    display.append("[ПУСТО]")
+                else:
+                    display.append(shown.strip())
+            display += [""] * (col_count - len(display))
+            lines.append("| " + " | ".join(display) + " |")
+            if row_num == 0:
+                lines.append("|" + "---|" * col_count)
+
     return "\n".join(lines)
 
 
-def _apply_table_values(table: TableBlock, values: List[str]) -> None:
-    idx = 0
-    docx_table = table.docx_obj
-    for row_idx, row in enumerate(table.data):
-        for col_idx, cell in enumerate(row):
-            if not is_empty_cell(cell):
-                continue
-            value = values[idx] if idx < len(values) else FALLBACK_VALUE
-            idx += 1
-            docx_cell = docx_table.rows[row_idx].cells[col_idx]
-            docx_cell.paragraphs[0].clear()
-            docx_cell.paragraphs[0].add_run(value)
-
-
-def fill_tables(
+def extract_table_values(
     source_tables: List[TableBlock],
     template_tables: List[TableBlock],
     embed_model: str,
     llm_model: str,
     llm_options: dict,
     top_k_per_target: int = 3,
-) -> None:
+) -> List[TableExtractionResult]:
     """
-    Один вызов LLM на ВСЕ таблицы шаблона сразу (без разбивки на пакеты —
-    дробление только умножает фиксированный оверхед на вызов, не повышая
-    качество). Единственное сжатие контекста — эмбеддинг-предфильтр
-    исходных таблиц перед сборкой промпта (см. _select_relevant).
+    ШАГ 1 (только извлечение). Один вызов LLM на ВСЕ таблицы шаблона сразу.
+    НЕ трогает docx — возвращает список результатов, которые apply_table_extraction
+    (или save_extraction) обработает дальше.
     """
+    results: List[TableExtractionResult] = []
+
     if not template_tables:
         logger.info("Таблицы в шаблоне не найдены, пропуск.")
-        return
+        return results
     if not source_tables:
         logger.warning("В исходнике нет таблиц — заполнять нечем.")
-        return
+        return results
 
     relevant_sources = _select_relevant(
         source_items=source_tables,
@@ -159,6 +259,10 @@ def fill_tables(
 
     source_blocks = [_table_to_text(t, f"SRC_{i}") for i, t in enumerate(relevant_sources)]
     required_ids = ", ".join(tid for tid, cnt in empty_counts.items() if cnt > 0)
+
+    if not required_ids:
+        logger.info("Все таблицы шаблона уже заполнены, LLM не вызываем.")
+        return results
 
     prompt = f"""Ты — ассистент по заполнению документов.
 У тебя есть ИСХОДНЫЕ ТАБЛИЦЫ с данными и ЦЕЛЕВЫЕ ТАБЛИЦЫ из шаблона, которые нужно заполнить.
@@ -195,12 +299,11 @@ TBL_2: {FALLBACK_VALUE}"""
     try:
         response = request(prompt, model=llm_model, **llm_options)
     except Exception:
-        logger.exception("Запрос к LLM по таблицам завершился ошибкой — таблицы останутся незаполненными")
-        return
+        logger.exception("Запрос к LLM по таблицам завершился ошибкой — извлечение не выполнено")
+        return results
 
     parsed = _parse_id_response(response, list(empty_counts.keys()))
 
-    filled = 0
     for i, template_table in enumerate(template_tables):
         tid = f"TBL_{i}"
         expected = empty_counts[tid]
@@ -217,10 +320,55 @@ TBL_2: {FALLBACK_VALUE}"""
         elif len(values) > expected:
             values = values[:expected]
 
-        _apply_table_values(template_table, values)
-        filled += 1
-        logger.info(f"Таблица '{template_table.name}' ({tid}) заполнена: {expected} значений")
+        results.append(TableExtractionResult(table_index=i, table_name=template_table.name, values=values))
 
+    logger.info(f"Извлечение таблиц завершено: {len(results)}/{len(template_tables)} таблиц с данными")
+    return results
+
+
+def apply_table_extraction(template_tables: List[TableBlock], results: List[TableExtractionResult]) -> int:
+    """
+    ШАГ 2 (только запись). Механически кладёт готовые значения в docx.
+    Ничего не знает про LLM/эмбеддинги — можно тестировать на фейковых данных.
+    """
+    filled = 0
+    for result in results:
+        if result.table_index >= len(template_tables):
+            logger.warning(f"Индекс таблицы {result.table_index} вне диапазона (всего {len(template_tables)}), пропуск")
+            continue
+
+        table = template_tables[result.table_index]
+        idx = 0
+        docx_table = table.docx_obj
+        for row_idx, row in enumerate(table.data):
+            for col_idx, cell in enumerate(row):
+                if not is_empty_cell(cell):
+                    continue
+                value = result.values[idx] if idx < len(result.values) else FALLBACK_VALUE
+                idx += 1
+                docx_cell = docx_table.rows[row_idx].cells[col_idx]
+                docx_cell.paragraphs[0].clear()
+                docx_cell.paragraphs[0].add_run(value)
+
+        filled += 1
+        logger.info(f"Таблица '{table.name}' заполнена: {len(result.values)} значений")
+
+    return filled
+
+
+def fill_tables(
+    source_tables: List[TableBlock],
+    template_tables: List[TableBlock],
+    embed_model: str,
+    llm_model: str,
+    llm_options: dict,
+    top_k_per_target: int = 3,
+) -> None:
+    """Тонкая обёртка: extract + apply одним вызовом, без промежуточного кэширования."""
+    results = extract_table_values(
+        source_tables, template_tables, embed_model, llm_model, llm_options, top_k_per_target
+    )
+    filled = apply_table_extraction(template_tables, results)
     logger.info(f"Таблицы: заполнено {filled}/{len(template_tables)}")
 
 
@@ -235,21 +383,29 @@ def _replace_placeholders(text: str, values: List[str]) -> str:
     return result
 
 
-def fill_paragraphs(
+def extract_paragraph_values(
     source_paragraphs: List[ParagraphBlock],
-    template_paragraphs: List[ParagraphBlock],
+    targets: List[ParagraphBlock],
     embed_model: str,
     llm_model: str,
     llm_options: dict,
     top_k_per_target: int = 8,
-) -> None:
-    targets = [p for p in template_paragraphs if "<Заполнить>" in p.text]
+) -> List[ParagraphExtractionResult]:
+    """
+    ШАГ 1 (только извлечение). targets — уже отфильтрованные параграфы шаблона
+    с тегом <Заполнить> (фильтрацию делает вызывающий код — fill_paragraphs
+    или main.py — чтобы один и тот же список targets использовался и здесь,
+    и в apply_paragraph_extraction: para_index ссылается на позицию в НЁМ,
+    а не в полном списке параграфов шаблона).
+    """
+    results: List[ParagraphExtractionResult] = []
+
     if not targets:
         logger.info("Теги <Заполнить> не найдены, пропуск.")
-        return
+        return results
     if not source_paragraphs:
         logger.warning("В исходнике нет параграфов — заполнять нечем.")
-        return
+        return results
 
     relevant_sources = _select_relevant(
         source_items=source_paragraphs,
@@ -294,10 +450,14 @@ PARA_0: Иванов Иван Иванович
 PARA_0: 15.01.2024
 PARA_1: {FALLBACK_VALUE}"""
 
-    response = request(prompt, model=llm_model, **llm_options)
+    try:
+        response = request(prompt, model=llm_model, **llm_options)
+    except Exception:
+        logger.exception("Запрос к LLM по параграфам завершился ошибкой — извлечение не выполнено")
+        return results
+
     parsed = _parse_id_response(response, list(counts.keys()))
 
-    filled = 0
     for i, target in enumerate(targets):
         pid = f"PARA_{i}"
         expected = counts[pid]
@@ -309,14 +469,49 @@ PARA_1: {FALLBACK_VALUE}"""
         elif len(values) > expected:
             values = values[:expected]
 
-        filled_text = _replace_placeholders(target.text, values)
+        results.append(ParagraphExtractionResult(para_index=i, original_text=target.text, values=values))
+
+    logger.info(f"Извлечение параграфов завершено: {len(results)}/{len(targets)}")
+    return results
+
+
+def apply_paragraph_extraction(targets: List[ParagraphBlock], results: List[ParagraphExtractionResult]) -> int:
+    """
+    ШАГ 2 (только запись). targets — тот же список, что передавался в
+    extract_paragraph_values (para_index ссылается на позиции в нём).
+    """
+    filled = 0
+    for result in results:
+        if result.para_index >= len(targets):
+            logger.warning(f"Индекс параграфа {result.para_index} вне диапазона (всего {len(targets)}), пропуск")
+            continue
+
+        target = targets[result.para_index]
+        filled_text = _replace_placeholders(target.text, result.values)
         target.docx_obj.clear()
         target.docx_obj.add_run(filled_text)
 
         if filled_text != target.text:
             filled += 1
-            logger.info(f"{pid} заполнен: '{target.text[:50]}...'")
+            logger.info(f"Параграф заполнен: '{target.text[:50]}...'")
         else:
-            logger.warning(f"{pid} не изменён (данные не найдены)")
+            logger.warning(f"Параграф не изменён (данные не найдены): '{target.text[:50]}...'")
 
+    return filled
+
+
+def fill_paragraphs(
+    source_paragraphs: List[ParagraphBlock],
+    template_paragraphs: List[ParagraphBlock],
+    embed_model: str,
+    llm_model: str,
+    llm_options: dict,
+    top_k_per_target: int = 8,
+) -> None:
+    """Тонкая обёртка: extract + apply одним вызовом, без промежуточного кэширования."""
+    targets = [p for p in template_paragraphs if "<Заполнить>" in p.text]
+    results = extract_paragraph_values(
+        source_paragraphs, targets, embed_model, llm_model, llm_options, top_k_per_target
+    )
+    filled = apply_paragraph_extraction(targets, results)
     logger.info(f"Параграфы: заполнено {filled}/{len(targets)}")
