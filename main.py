@@ -16,17 +16,28 @@ from filler import (
 from parser import paragraphs_of, parse, tables_of
 
 
-def setup_logging(log_file: str):
-    """Настраивает логирование с очисткой лог-файла при каждом запуске."""
-    if os.path.exists(log_file):
-        os.remove(log_file)
+def setup_logging(log_file: str) -> str:
+    """
+    Настраивает логирование с очисткой лог-файла при каждом запуске.
+    Возвращает абсолютный путь к лог-файлу (для вывода пользователю).
+    """
+    abs_path = os.path.abspath(log_file)
+
+    # print(), а не logger — на случай если логирование ещё не настроено
+    # или настроится не полностью, пользователь всё равно увидит, КУДА
+    # реально пишутся логи (частая причина "логи не появляются" — скрипт
+    # запущен из другой рабочей директории, чем ожидает пользователь).
+    print(f"[log] Лог-файл: {abs_path}")
 
     _formatter = logging.Formatter(
         fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    _file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    # mode="w" сам усекает файл при открытии — не нужен отдельный os.remove(),
+    # который может упасть (файл открыт в другой программе) или создать гонку
+    # между удалением и пересозданием.
+    _file_handler = logging.FileHandler(abs_path, mode="w", encoding="utf-8")
     _file_handler.setLevel(logging.DEBUG)
     _file_handler.setFormatter(_formatter)
 
@@ -34,7 +45,15 @@ def setup_logging(log_file: str):
     _console_handler.setLevel(logging.INFO)
     _console_handler.setFormatter(_formatter)
 
-    logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handler])
+    # force=True — КРИТИЧНО: без него basicConfig ничего не делает, если
+    # у root-логгера уже есть хоть один хендлер (например, повешенный
+    # неявно какой-то из импортированных библиотек до этого вызова).
+    # Без force=True в таком случае наш file_handler просто не подключится,
+    # и лог-файл останется пустым/нетронутым — ровно то поведение, которое
+    # вы наблюдали.
+    logging.basicConfig(level=logging.DEBUG, handlers=[_file_handler, _console_handler], force=True)
+
+    return abs_path
 
 
 logger = logging.getLogger(__name__)
@@ -49,12 +68,13 @@ def main() -> None:
         logging.error(f"Ошибка загрузки конфигурации: {e}")
         return
 
-    setup_logging(cfg.log_file)
+    log_path = setup_logging(cfg.log_file)
     logger.info("=" * 80)
     logger.info(f"НАЧАЛО ОБРАБОТКИ | Модель: {cfg.model} | Embeddings: {cfg.embed_model}")
     logger.info(f"Исходник: {cfg.source_path}")
     logger.info(f"Шаблон: {cfg.template_path}")
     logger.info(f"Выход: {cfg.output_path}")
+    logger.info(f"Лог-файл: {log_path}")
     logger.info("=" * 80)
 
     source_doc = docx.Document(cfg.source_path)
