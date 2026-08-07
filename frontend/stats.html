@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Статистика - Генератор документов</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="header__title">📊 Статистика использования</h1>
+      <nav class="header__nav">
+        <a href="index.html" class="nav-link">← К редактору</a>
+        <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+          <span id="themeIcon">🌙</span>
+        </button>
+      </nav>
+    </header>
+
+    <div class="stats-grid">
+      <section class="stats-card">
+        <h2 class="section-title">Активность за 14 дней</h2>
+        <div class="chart-container">
+          <div class="chart" id="activityChart"></div>
+        </div>
+        <div class="chart-legend">
+          <span class="chart-legend__item">
+            <span class="chart-legend__color" style="background: var(--accent);"></span>
+            Обработанные документы
+          </span>
+        </div>
+      </section>
+
+      <section class="stats-card">
+        <h2 class="section-title">Активные пользователи</h2>
+        <div class="users-list" id="usersList"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="stats.js"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Генератор документов - ИГМИ</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="header__title">📄 Генератор документов ИГМИ</h1>
+      <nav class="header__nav">
+        <a href="stats.html" class="nav-link">📊 Статистика</a>
+        <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+          <span id="themeIcon">🌙</span>
+        </button>
+      </nav>
+    </header>
+
+    <div class="main-grid">
+      <section class="upload-section">
+        <h2 class="section-title">Загрузка исходного документа</h2>
+        
+        <div class="drop-zone" id="dropZone">
+          <div class="drop-zone__icon">📁</div>
+          <div class="drop-zone__text">Перетащите файл сюда</div>
+          <div class="drop-zone__hint">или нажмите для выбора</div>
+          <input type="file" id="fileInput" class="file-input" accept=".docx">
+        </div>
+
+        <div class="file-info" id="fileInfo">
+          <div class="file-info__name" id="fileName"></div>
+          <div class="file-info__size" id="fileSize"></div>
+        </div>
+
+        <div class="progress-section" id="progressSection">
+          <h3 class="section-title">Процесс обработки</h3>
+          <div class="progress-steps">
+            <div class="progress-step" data-step="1">
+              <div class="progress-step__icon">1</div>
+              <div class="progress-step__text">Парсинг исходного документа</div>
+            </div>
+            <div class="progress-step" data-step="2">
+              <div class="progress-step__icon">2</div>
+              <div class="progress-step__text">Парсинг шаблона</div>
+            </div>
+            <div class="progress-step" data-step="3">
+              <div class="progress-step__icon">3</div>
+              <div class="progress-step__text">Заполнение таблиц</div>
+            </div>
+            <div class="progress-step" data-step="4">
+              <div class="progress-step__icon">4</div>
+              <div class="progress-step__text">Заполнение параграфов</div>
+            </div>
+            <div class="progress-step" data-step="5">
+              <div class="progress-step__icon">5</div>
+              <div class="progress-step__text">Генерация документа</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn--primary" id="processBtn" disabled>
+            <span>🚀</span>
+            <span>Начать обработку</span>
+          </button>
+          <button class="btn btn--secondary" id="resetBtn" style="display: none;">
+            <span>🔄</span>
+            <span>Сбросить</span>
+          </button>
+        </div>
+      </section>
+
+      <aside class="recent-files">
+        <h2 class="section-title">Последние результаты</h2>
+        <div class="recent-files__list" id="recentFilesList">
+          <div class="empty-state">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📭</div>
+            <div>Пока нет обработанных файлов</div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span class="toast__icon">✅</span>
+    <span class="toast__text" id="toastText">Документ успешно создан!</span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
