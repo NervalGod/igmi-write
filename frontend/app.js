@@ -5,6 +5,24 @@ function initTheme() {
 }
 initTheme();
 
+const themeToggle = document.getElementById('themeToggle');
+
+function initTheme() {
+  const saved = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'light' ? 'dark' : 'dark' === current ? 'light' : 'light';
+    const newTheme = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  });
+}
+
+initTheme();
 // ===== Пользователь =====
 // Идентификатор пользователя — для статистики. Хранится в localStorage,
 // можно задать через prompt при первом входе или оставить анонимным.

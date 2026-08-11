@@ -48,16 +48,42 @@ app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 # ==========================================
 # Раздача фронтенда
 # ==========================================
+# ==========================================
+# Раздача фронтенда
+# ==========================================
+
+# Корневой URL — отдаём index.html
 @app.get("/", response_class=HTMLResponse)
-async def index():
+async def index_root():
     return FileResponse(FRONTEND_DIR / "index.html")
 
 
+# Прямой доступ к index.html
+@app.get("/index.html", response_class=HTMLResponse)
+async def index_page():
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+# Страница статистики
 @app.get("/stats.html", response_class=HTMLResponse)
 async def stats_page():
     return FileResponse(FRONTEND_DIR / "stats.html")
 
 
+# Статические ресурсы
+@app.get("/style.css")
+async def style_css():
+    return FileResponse(FRONTEND_DIR / "style.css", media_type="text/css")
+
+
+@app.get("/stats.js")
+async def stats_js():
+    return FileResponse(FRONTEND_DIR / "stats.js", media_type="application/javascript")
+
+
+@app.get("/app.js")
+async def app_js():
+    return FileResponse(FRONTEND_DIR / "app.js", media_type="application/javascript")
 # ==========================================
 # API: генерация
 # ==========================================

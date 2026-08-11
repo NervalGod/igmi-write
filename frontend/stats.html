@@ -3,40 +3,95 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Статистика - Генератор документов</title>
+  <title>Статистика — Локальный редактор текста</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
+  <div class="app">
     <header class="header">
-      <h1 class="header__title">📊 Статистика использования</h1>
-      <nav class="header__nav">
-        <a href="index.html" class="nav-link">← К редактору</a>
-        <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
-          <span id="themeIcon">🌙</span>
+      <div class="header__brand">
+        <svg class="header__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v18h18"></path>
+          <path d="M7 14l4-4 4 4 5-5"></path>
+        </svg>
+        <h1>Статистика</h1>
+      </div>
+      <div class="header__actions">
+        <a href="/" class="btn btn--ghost btn--sm">← К редактору</a>
+        <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
+          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
         </button>
-      </nav>
+      </div>
     </header>
-    <div class="stats-grid">
-      <section class="stats-card">
-        <h2 class="section-title">Активность за 14 дней</h2>
-        <div class="chart-container">
-          <div class="chart" id="activityChart"></div>
+
+    <main class="stats-layout">
+      <!-- Счётчики сверху -->
+      <section class="counters" id="counters">
+        <div class="counter">
+          <div class="counter__value" id="counterDocs">0</div>
+          <div class="counter__label">документов создано</div>
         </div>
-        <div class="chart-legend">
-          <span class="chart-legend__item">
-            <span class="chart-legend__color" style="background: var(--accent);"></span>
-            Обработанные документы
-          </span>
+        <div class="counter">
+          <div class="counter__value" id="counterUsers">0</div>
+          <div class="counter__label">пользователей</div>
+        </div>
+        <div class="counter">
+          <div class="counter__value" id="counter30d">0</div>
+          <div class="counter__label">за 30 дней</div>
+        </div>
+        <div class="counter">
+          <div class="counter__value" id="counterToday">0</div>
+          <div class="counter__label">сегодня</div>
         </div>
       </section>
-      <section class="stats-card">
-        <h2 class="section-title">Активные пользователи</h2>
-        <div class="users-list" id="usersList"></div>
-      </section>
-    </div>
+
+      <!-- Основная сетка: график + пользователи -->
+      <div class="stats-grid">
+        <section class="panel stats-card">
+          <div class="panel__header">
+            <h2>📈 Активность за 14 дней</h2>
+          </div>
+          <div class="chart-container">
+            <div class="chart" id="activityChart">
+              <div class="placeholder">Загрузка...</div>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <span class="chart-legend__item">
+              <span class="chart-legend__color"></span>
+              Обработанные документы
+            </span>
+          </div>
+        </section>
+
+        <section class="panel stats-card">
+          <div class="panel__header">
+            <h2>👥 Активные пользователи</h2>
+          </div>
+          <div class="users-list" id="usersList">
+            <div class="placeholder">Загрузка...</div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <code>IGMI Document Generator · статистика обновляется автоматически</code>
+    </footer>
   </div>
+
+  <div class="toast" id="toast">
+    <span class="toast__icon">✅</span>
+    <span class="toast__text" id="toastText"></span>
+  </div>
+
   <script src="stats.js"></script>
 </body>
 </html>
