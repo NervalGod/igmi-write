@@ -1,17 +1,14 @@
 // Theme Management
 const themeToggle = document.getElementById('themeToggle');
 const themeIcon = document.getElementById('themeIcon');
-
 function initTheme() {
   const savedTheme = localStorage.getItem('theme') || 'dark';
   document.body.setAttribute('data-theme', savedTheme);
   updateThemeIcon(savedTheme);
 }
-
 function updateThemeIcon(theme) {
   themeIcon.textContent = theme === 'dark' ? '🌙' : '☀️';
 }
-
 themeToggle.addEventListener('click', () => {
   const currentTheme = document.body.getAttribute('data-theme');
   const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
@@ -19,10 +16,8 @@ themeToggle.addEventListener('click', () => {
   localStorage.setItem('theme', newTheme);
   updateThemeIcon(newTheme);
 });
-
 // Activity Chart
 const activityChart = document.getElementById('activityChart');
-
 function generateActivityData() {
   const data = [];
   for (let i = 13; i >= 0; i--) {
@@ -35,20 +30,17 @@ function generateActivityData() {
   }
   return data;
 }
-
 function renderActivityChart() {
   const data = generateActivityData();
   const maxValue = Math.max(...data.map(d => d.value));
-  
+
   activityChart.innerHTML = data.map(item => {
     const height = (item.value / maxValue) * 100;
     return '<div class="chart-bar" style="height: ' + height + '%;" title="' + item.date + ': ' + item.value + ' документов"><div class="chart-bar__label">' + item.value + '</div></div>';
   }).join('');
 }
-
 // Active Users
 const usersList = document.getElementById('usersList');
-
 function generateUsersData() {
   const users = [
     { name: 'Иванов И.И.', count: 47, department: 'Отдел проектирования' },
@@ -59,11 +51,10 @@ function generateUsersData() {
   ];
   return users;
 }
-
 function renderUsersList() {
   const users = generateUsersData();
-  
-  usersList.innerHTML = users.map(user => 
+
+  usersList.innerHTML = users.map(user =>
     '<div class="user-item">' +
     '<div class="user-item__info">' +
     '<div class="user-item__name">' + user.name + '</div>' +
@@ -76,7 +67,6 @@ function renderUsersList() {
     '</div>'
   ).join('');
 }
-
 // Initialize
 initTheme();
 renderActivityChart();

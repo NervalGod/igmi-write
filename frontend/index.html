@@ -15,16 +15,13 @@
       <h1 class="header__title">📄 Генератор документов ИГМИ</h1>
       <nav class="header__nav">
         <a href="stats.html" class="nav-link">📊 Статистика</a>
-        <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
-          <span id="themeIcon">🌙</span>
-        </button>
       </nav>
     </header>
 
     <div class="main-grid">
       <section class="upload-section">
         <h2 class="section-title">Загрузка исходного документа</h2>
-        
+
         <div class="drop-zone" id="dropZone">
           <div class="drop-zone__icon">📁</div>
           <div class="drop-zone__text">Перетащите файл сюда</div>
@@ -37,8 +34,25 @@
           <div class="file-info__size" id="fileSize"></div>
         </div>
 
+        <div class="project-field" id="projectField">
+          <label class="project-field__label" for="projectNameInput">Название проекта</label>
+          <input
+            type="text"
+            id="projectNameInput"
+            class="project-field__input"
+            placeholder="Например: Метеостанция Хорей-Вер"
+            autocomplete="off"
+          >
+          <div class="project-field__hint">Используется как имя итогового файла. По умолчанию — имя загруженного документа, можно изменить.</div>
+        </div>
+
         <div class="progress-section" id="progressSection">
-          <h3 class="section-title">Процесс обработки</h3>
+          <h3 class="section-title">Обработка документа</h3>
+
+          <div class="progress-bar" id="progressBar" role="progressbar" aria-label="Идёт обработка">
+            <div class="progress-bar__fill"></div>
+          </div>
+
           <div class="progress-steps">
             <div class="progress-step" data-step="1">
               <div class="progress-step__icon">1</div>
@@ -61,12 +75,18 @@
               <div class="progress-step__text">Генерация документа</div>
             </div>
           </div>
+
+          <div class="progress-done" id="progressDone">
+            <span class="progress-done__icon">✅</span>
+            <span id="progressDoneText">Готово! Файл создан и добавлен в список ниже.</span>
+          </div>
         </div>
 
         <div class="actions">
           <button class="btn btn--primary" id="processBtn" disabled>
-            <span>🚀</span>
-            <span>Начать обработку</span>
+            <span class="btn__spinner" id="btnSpinner" aria-hidden="true"></span>
+            <span id="processBtnIcon">🚀</span>
+            <span id="processBtnText">Начать обработку</span>
           </button>
           <button class="btn btn--secondary" id="resetBtn" style="display: none;">
             <span>🔄</span>
@@ -76,7 +96,7 @@
       </section>
 
       <aside class="recent-files">
-        <h2 class="section-title">Последние результаты</h2>
+        <h2 class="section-title">Готовые файлы</h2>
         <div class="recent-files__list" id="recentFilesList">
           <div class="empty-state">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">📭</div>
@@ -88,7 +108,7 @@
   </div>
 
   <div class="toast" id="toast">
-    <span class="toast__icon">✅</span>
+    <span class="toast__icon" id="toastIcon">✅</span>
     <span class="toast__text" id="toastText">Документ успешно создан!</span>
   </div>
 

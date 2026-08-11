@@ -8,6 +8,7 @@
   --accent-hover: #d63447;
   --accent-light: rgba(233, 69, 96, 0.1);
   --success: #4ecca3;
+  --success-light: rgba(78, 204, 163, 0.12);
   --border: #2d3561;
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   --radius: 16px;
@@ -23,6 +24,7 @@
   --text-primary: #2d3748;
   --text-secondary: #718096;
   --success: #48bb78;
+  --success-light: rgba(72, 187, 120, 0.1);
   --border: #e2e8f0;
   --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
@@ -35,6 +37,19 @@ body {
   color: var(--text-primary);
   line-height: 1.6;
   transition: var(--transition);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .container { max-width: 1600px; margin: 0 auto; padding: 2rem; min-height: 100vh; }
@@ -86,7 +101,7 @@ body {
 
 .theme-toggle:hover { border-color: var(--accent); transform: rotate(20deg); }
 
-.main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 2rem; margin-bottom: 2rem; }
+.main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 2rem; margin-bottom: 2rem; align-items: start; }
 
 .upload-section {
   background: var(--bg-card);
@@ -127,9 +142,92 @@ body {
 
 .file-info__size { font-size: 0.875rem; color: var(--text-secondary); }
 
+/* Поле названия проекта */
+
+.project-field {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  display: none;
+}
+
+.project-field.visible { display: block; animation: slideIn 0.3s ease; }
+
+.project-field__label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.5rem;
+}
+
+.project-field__input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.project-field__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.project-field__hint {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+/* Индикатор процесса обработки */
+
 .progress-section { margin-top: 2rem; display: none; }
 
 .progress-section.visible { display: block; animation: slideIn 0.3s ease; }
+
+.progress-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.progress-bar__fill {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--success));
+  transform: translateX(-100%);
+}
+
+.progress-bar.active .progress-bar__fill {
+  animation: progressSlide 1.3s ease-in-out infinite;
+}
+
+.progress-bar.done .progress-bar__fill {
+  animation: none;
+  width: 100%;
+  transform: translateX(0);
+}
+
+@keyframes progressSlide {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(130%); }
+  100% { transform: translateX(280%); }
+}
 
 .progress-steps { display: flex; flex-direction: column; gap: 1rem; }
 
@@ -163,9 +261,27 @@ body {
 
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
+.progress-done {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--success-light);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.progress-done.visible { display: flex; animation: slideIn 0.3s ease; }
+
+.progress-done__icon { font-size: 1.3rem; }
+
 .actions { margin-top: 2rem; display: flex; gap: 1rem; }
 
 .btn {
+  position: relative;
   padding: 0.875rem 2rem;
   border: none;
   border-radius: var(--radius-sm);
@@ -186,7 +302,26 @@ body {
 
 .btn--secondary { background: var(--bg-secondary); color: var(--text-primary); border: 2px solid var(--border); }
 
-.btn--secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn--secondary:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+.btn--secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn__spinner {
+  display: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+}
+
+.btn__spinner.spinning {
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Список готовых файлов, сгруппированный по проектам */
 
 .recent-files {
   background: var(--bg-card);
@@ -194,16 +329,84 @@ body {
   padding: 1.5rem;
   box-shadow: var(--shadow);
   border: 1px solid var(--border);
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
-.recent-files__list { display: flex; flex-direction: column; gap: 0.75rem; }
+.recent-files__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.file-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.file-group__header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  color: var(--text-primary);
+  text-align: left;
+  transition: var(--transition);
+}
+
+.file-group__header:hover { background: var(--accent-light); }
+
+.file-group__chevron {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  transition: transform 0.25s ease;
+  flex-shrink: 0;
+}
+
+.file-group--collapsed .file-group__chevron { transform: rotate(-90deg); }
+
+.file-group__name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-group__count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  flex-shrink: 0;
+}
+
+.file-group__files {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.6rem 0.6rem;
+}
+
+.file-group--collapsed .file-group__files { display: none; }
 
 .file-item {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem;
-  background: var(--bg-secondary);
+  padding: 0.85rem;
+  background: var(--bg-primary);
   border-radius: var(--radius-sm);
   transition: var(--transition);
 }
@@ -216,25 +419,25 @@ body {
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 0.25rem;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.file-item__date { font-size: 0.8rem; color: var(--text-secondary); }
+.file-item__date { font-size: 0.75rem; color: var(--text-secondary); }
 
 .file-item__download {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.85rem;
   background: var(--accent);
   color: white;
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   flex-shrink: 0;
-  margin-left: 1rem;
+  margin-left: 0.75rem;
 }
 
 .file-item__download:hover { background: var(--accent-hover); }
@@ -257,6 +460,7 @@ body {
   align-items: center;
   gap: 0.75rem;
   font-weight: 500;
+  max-width: 90vw;
 }
 
 .toast.visible { transform: translateX(0); }
@@ -265,7 +469,10 @@ body {
 
 @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-@media (max-width: 1200px) { .main-grid { grid-template-columns: 1fr; } .recent-files { max-height: 400px; } }
+@media (max-width: 1200px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .recent-files__list { max-height: 400px; }
+}
 
 @media (max-width: 768px) {
   .container { padding: 1rem; }
@@ -281,6 +488,8 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Страница статистики */
 
 .stats-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem; }
 
