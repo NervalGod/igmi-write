@@ -1,47 +1,23 @@
-// ===== Тема =====
-function initTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'dark';
-  document.body.setAttribute('data-theme', savedTheme);
-}
-initTheme();
-
+// ===== Переключение темы =====
 const themeToggle = document.getElementById('themeToggle');
 
 function initTheme() {
-  const saved = localStorage.getItem('theme') || 'light';
-  document.documentElement.setAttribute('data-theme', saved);
+  const savedTheme = localStorage.getItem('theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
 if (themeToggle) {
   themeToggle.addEventListener('click', () => {
     const current = document.documentElement.getAttribute('data-theme') || 'light';
-    const next = current === 'light' ? 'dark' : 'dark' === current ? 'light' : 'light';
-    const newTheme = current === 'light' ? 'dark' : 'light';
-    document.documentElement.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
+    const next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
   });
 }
 
 initTheme();
-// ===== Пользователь =====
-// Идентификатор пользователя — для статистики. Хранится в localStorage,
-// можно задать через prompt при первом входе или оставить анонимным.
-function getUser() {
-  let u = localStorage.getItem('user');
-  if (!u) {
-    // При первом заходе спрашиваем имя (один раз)
-    const name = prompt(
-      'Как к вам обращаться? (для статистики использования)\n' +
-      'Можно оставить пустым — будет "аноним".'
-    );
-    u = (name || '').trim() || 'anonymous';
-    localStorage.setItem('user', u);
-  }
-  return u;
-}
-const CURRENT_USER = getUser();
 
-// ===== File Upload =====
+// ===== Элементы DOM =====
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const fileInfo = document.getElementById('fileInfo');
@@ -58,23 +34,103 @@ const progressSection = document.getElementById('progressSection');
 const progressBar = document.getElementById('progressBar');
 const progressDone = document.getElementById('progressDone');
 const progressDoneText = document.getElementById('progressDoneText');
+const progressDoneClose = document.getElementById('progressDoneClose');
+const recentFilesList = document.getElementById('recentFilesList');
 
 let selectedFile = null;
 
+// ===== Сохранение состояния АКТИВНОГО задания (переживает перезагрузку) =====
+const PENDING_JOB_KEY = 'igmi_pending_job';
+
+function saveJobState(jobId, projectName) {
+  localStorage.setItem(PENDING_JOB_KEY, JSON.stringify({
+    jobId,
+    projectName,
+    savedAt: Date.now(),
+  }));
+}
+
+function loadJobState() {
+  try {
+    const raw = localStorage.getItem(PENDING_JOB_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.error('Не удалось прочитать состояние задания:', e);
+    return null;
+  }
+}
+
+function clearJobState() {
+  localStorage.removeItem(PENDING_JOB_KEY);
+}
+
+// ===== Сохранение состояния ЗАВЕРШЁННОЙ обработки (плашка после перезагрузки) =====
+const COMPLETED_JOB_KEY = 'igmi_completed_job';
+
+function saveCompletedState(filename) {
+  localStorage.setItem(COMPLETED_JOB_KEY, JSON.stringify({ filename }));
+}
+
+function loadCompletedState() {
+  try {
+    const raw = localStorage.getItem(COMPLETED_JOB_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function clearCompletedState() {
+  localStorage.removeItem(COMPLETED_JOB_KEY);
+}
+
+// ===== Крестик на плашке завершения =====
+if (progressDoneClose) {
+  progressDoneClose.addEventListener('click', () => {
+    progressDone.classList.remove('visible');
+    clearCompletedState();
+  });
+}
+
+// ===== Валидация формы =====
+function updateProcessButtonState() {
+  const hasFile = !!selectedFile;
+  const hasProject = projectNameInput.value.trim().length > 0;
+  processBtn.disabled = !(hasFile && hasProject);
+
+  if (hasFile && !hasProject) {
+    projectNameInput.classList.add('invalid');
+  } else {
+    projectNameInput.classList.remove('invalid');
+  }
+}
+
+projectNameInput.addEventListener('input', updateProcessButtonState);
+
+// ===== Drag & Drop и выбор файла =====
 dropZone.addEventListener('click', () => fileInput.click());
 
 dropZone.addEventListener('dragover', (e) => {
   e.preventDefault();
   dropZone.classList.add('drag-over');
 });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('drag-over');
+});
+
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
-  if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+  if (e.dataTransfer.files.length > 0) {
+    handleFile(e.dataTransfer.files[0]);
+  }
 });
+
 fileInput.addEventListener('change', (e) => {
-  if (e.target.files.length > 0) handleFile(e.target.files[0]);
+  if (e.target.files.length > 0) {
+    handleFile(e.target.files[0]);
+  }
 });
 
 function stripExtension(filename) {
@@ -87,31 +143,43 @@ function handleFile(file) {
     showToast('Пожалуйста, выберите файл .docx', true);
     return;
   }
+
   selectedFile = file;
   fileName.textContent = file.name;
   fileSize.textContent = formatFileSize(file.size);
   fileInfo.classList.add('visible');
+
   projectNameInput.value = stripExtension(file.name);
   projectField.classList.add('visible');
-  processBtn.disabled = false;
+
   resetBtn.style.display = 'inline-flex';
+  updateProcessButtonState();
 }
 
 function formatFileSize(bytes) {
   if (bytes === 0) return '0 Bytes';
-  const k = 1024, sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-// ===== Process =====
+// ===== Обработка =====
 processBtn.addEventListener('click', startProcessing);
 
 async function startProcessing() {
   if (!selectedFile) return;
 
-  const projectName = (projectNameInput.value || '').trim() || stripExtension(selectedFile.name);
+  const projectName = (projectNameInput.value || '').trim();
 
+  if (!projectName) {
+    showToast('Укажите название проекта', true);
+    projectNameInput.classList.add('invalid');
+    projectNameInput.focus();
+    return;
+  }
+
+  // Блокируем UI
   processBtn.disabled = true;
   resetBtn.disabled = true;
   btnSpinner.classList.add('spinning');
@@ -127,17 +195,18 @@ async function startProcessing() {
   steps.forEach((step, i) => {
     step.classList.remove('active', 'completed');
     step.querySelector('.progress-step__icon').textContent = i + 1;
-    const defText = step.querySelector('.progress-step__text').dataset.default ||
-                    step.querySelector('.progress-step__text').textContent;
-    step.querySelector('.progress-step__text').dataset.default = defText;
-    step.querySelector('.progress-step__text').textContent = defText;
+    const textEl = step.querySelector('.progress-step__text');
+    if (!textEl.dataset.default) {
+      textEl.dataset.default = textEl.textContent;
+    } else {
+      textEl.textContent = textEl.dataset.default;
+    }
   });
 
-  // === Шаг 1: загрузка файла на сервер ===
+  // Отправка на сервер
   const formData = new FormData();
   formData.append('file', selectedFile);
   formData.append('project', projectName);
-  formData.append('user', CURRENT_USER);
 
   let jobId = null;
   try {
@@ -149,19 +218,20 @@ async function startProcessing() {
     const data = await res.json();
     jobId = data.job_id;
     processBtnText.textContent = 'Обработка...';
+
+    // Сохраняем, чтобы пережить перезагрузку страницы
+    saveJobState(jobId, projectName);
   } catch (e) {
     showToast('Ошибка отправки: ' + e.message, true);
     resetUI();
     return;
   }
 
-  // === Шаг 2: polling статуса задания ===
   try {
     await pollJob(jobId, steps);
   } catch (e) {
     showToast('Ошибка обработки: ' + e.message, true);
     resetUI();
-    return;
   }
 }
 
@@ -174,9 +244,8 @@ async function pollJob(jobId, steps) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const job = await res.json();
 
-    // Отображаем текущий шаг
+    // Обновляем визуализацию шагов
     if (job.step !== lastStep) {
-      // Все предыдущие шаги — completed
       for (let i = 0; i < steps.length; i++) {
         const stepNum = i + 1;
         if (stepNum < job.step) {
@@ -186,7 +255,6 @@ async function pollJob(jobId, steps) {
         } else if (stepNum === job.step && job.status === 'running') {
           steps[i].classList.add('active');
           steps[i].classList.remove('completed');
-          // Показываем актуальное имя шага с сервера
           if (job.step_name) {
             steps[i].querySelector('.progress-step__text').textContent = job.step_name;
           }
@@ -195,14 +263,12 @@ async function pollJob(jobId, steps) {
       lastStep = job.step;
     }
 
-    // Очередь (если ещё не запущено)
     if (job.status === 'queued') {
       processBtnText.textContent = `В очереди: ${job.queue_position + 1}`;
     }
 
-    // Финальные состояния
+    // Успешное завершение
     if (job.status === 'done') {
-      // Все шаги — completed
       steps.forEach(s => {
         s.classList.remove('active');
         s.classList.add('completed');
@@ -214,15 +280,21 @@ async function pollJob(jobId, steps) {
       progressDoneText.textContent =
         `Готово! Файл «${job.filename}» создан и добавлен в список ниже.`;
       progressDone.classList.add('visible');
+
+      // Сохраняем, чтобы плашка пережила перезагрузку страницы
+      saveCompletedState(job.filename);
+      clearJobState();
+
       showToast('Документ «' + job.filename + '» готов!');
 
       await refreshFilesList();
       await sleep(1800);
-      resetUI();
+      resetForm();   // сбрасываем форму, но плашку НЕ трогаем
       return;
     }
 
     if (job.status === 'error') {
+      clearJobState();
       throw new Error(job.error || 'Неизвестная ошибка сервера');
     }
 
@@ -230,10 +302,16 @@ async function pollJob(jobId, steps) {
   }
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
 
+// Полный сброс UI (включая плашку завершения)
 function resetUI() {
   selectedFile = null;
+  clearJobState();
+  clearCompletedState();
+
   fileInfo.classList.remove('visible');
   projectField.classList.remove('visible');
   progressSection.classList.remove('visible');
@@ -251,30 +329,66 @@ function resetUI() {
   steps.forEach((step, i) => {
     step.classList.remove('active', 'completed');
     step.querySelector('.progress-step__icon').textContent = i + 1;
-    const def = step.querySelector('.progress-step__text').dataset.default;
-    if (def) step.querySelector('.progress-step__text').textContent = def;
+    const textEl = step.querySelector('.progress-step__text');
+    if (textEl.dataset.default) {
+      textEl.textContent = textEl.dataset.default;
+    }
   });
 
   fileInput.value = '';
+  projectNameInput.classList.remove('invalid');
+  updateProcessButtonState();
+}
+
+// Сброс формы БЕЗ скрытия плашки завершения
+function resetForm() {
+  selectedFile = null;
+  clearJobState();
+
+  fileInfo.classList.remove('visible');
+  projectField.classList.remove('visible');
+  progressSection.classList.remove('visible');
+  progressBar.classList.remove('active', 'done');
+
+  processBtn.disabled = true;
+  resetBtn.disabled = false;
+  resetBtn.style.display = 'none';
+  btnSpinner.classList.remove('spinning');
+  processBtnIcon.style.display = '';
+  processBtnText.textContent = 'Начать обработку';
+
+  const steps = document.querySelectorAll('.progress-step');
+  steps.forEach((step, i) => {
+    step.classList.remove('active', 'completed');
+    step.querySelector('.progress-step__icon').textContent = i + 1;
+    const textEl = step.querySelector('.progress-step__text');
+    if (textEl.dataset.default) {
+      textEl.textContent = textEl.dataset.default;
+    }
+  });
+
+  fileInput.value = '';
+  projectNameInput.classList.remove('invalid');
+  updateProcessButtonState();
 }
 
 resetBtn.addEventListener('click', resetUI);
 
-// ===== Toast =====
+// ===== Toast-уведомления =====
 const toast = document.getElementById('toast');
 const toastIcon = document.getElementById('toastIcon');
 const toastText = document.getElementById('toastText');
 
 function showToast(message, isError = false, icon = null) {
-  toastIcon.textContent = icon || (isError ? '❌' : '✅');
+  if (!toast || !toastText) return;
+  if (toastIcon) toastIcon.textContent = icon || (isError ? '❌' : '✅');
   toastText.textContent = message;
-  toast.style.background = isError ? 'var(--accent)' : 'var(--success)';
+  toast.style.background = isError ? 'var(--danger)' : 'var(--success)';
   toast.classList.add('visible');
   setTimeout(() => toast.classList.remove('visible'), 3500);
 }
 
-// ===== Recent Files =====
-const recentFilesList = document.getElementById('recentFilesList');
+// ===== Список готовых файлов =====
 const collapsedProjects = new Set();
 
 async function refreshFilesList() {
@@ -307,7 +421,7 @@ function renderGroups(groups) {
           '</div>' +
         '</div>' +
         '<a class="file-item__download" href="/api/download/' +
-          encodeURIComponent(file.name) + '" download>⬇️</a>' +
+          encodeURIComponent(file.rel_path) + '" download>⬇️</a>' +
       '</div>'
     ).join('');
 
@@ -334,8 +448,11 @@ recentFilesList.addEventListener('click', (e) => {
   const header = e.target.closest('.file-group__header');
   if (header) {
     const project = header.dataset.project;
-    if (collapsedProjects.has(project)) collapsedProjects.delete(project);
-    else collapsedProjects.add(project);
+    if (collapsedProjects.has(project)) {
+      collapsedProjects.delete(project);
+    } else {
+      collapsedProjects.add(project);
+    }
     refreshFilesList();
   }
 });
@@ -343,12 +460,88 @@ recentFilesList.addEventListener('click', (e) => {
 function formatDate(isoString) {
   const date = new Date(isoString);
   return date.toLocaleString('ru-RU', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
-// ===== Init =====
+// ===== Возобновление незавершённого задания после перезагрузки =====
+async function resumePendingJob() {
+  const state = loadJobState();
+  if (!state || !state.jobId) return;
+
+  let job = null;
+  try {
+    const res = await fetch(`/api/job/${state.jobId}`);
+    if (!res.ok) {
+      // Сервер был перезапущен — задание потеряно (тихо очищаем)
+      clearJobState();
+      return;
+    }
+    job = await res.json();
+  } catch (e) {
+    console.error('Ошибка проверки задания:', e);
+    clearJobState();
+    return;
+  }
+
+  // Если уже завершено или упало — очищаем
+  if (job.status === 'done' || job.status === 'error') {
+    clearJobState();
+    if (job.status === 'done') {
+      await refreshFilesList();
+    }
+    return;
+  }
+
+  // Задание ещё в работе — восстанавливаем UI и продолжаем polling (без уведомлений)
+  processBtn.disabled = true;
+  resetBtn.disabled = true;
+  resetBtn.style.display = 'inline-flex';
+  btnSpinner.classList.add('spinning');
+  processBtnIcon.style.display = 'none';
+  processBtnText.textContent = 'Обработка...';
+
+  progressSection.classList.add('visible');
+  progressDone.classList.remove('visible');
+  progressBar.classList.add('active');
+  progressBar.classList.remove('done');
+
+  const steps = document.querySelectorAll('.progress-step');
+  steps.forEach((step, i) => {
+    step.classList.remove('active', 'completed');
+    step.querySelector('.progress-step__icon').textContent = i + 1;
+    const textEl = step.querySelector('.progress-step__text');
+    if (!textEl.dataset.default) {
+      textEl.dataset.default = textEl.textContent;
+    }
+  });
+
+  try {
+    await pollJob(state.jobId, steps);
+  } catch (e) {
+    showToast('Ошибка обработки: ' + e.message, true);
+    resetUI();
+  }
+}
+
+// ===== Инициализация =====
 refreshFilesList();
-// Обновляем список каждые 30 сек (если в другой вкладке что-то сгенерировалось)
 setInterval(refreshFilesList, 30000);
+
+// Показываем плашку завершённой обработки, если пользователь её ещё не закрыл
+const completedState = loadCompletedState();
+if (completedState && completedState.filename) {
+  progressDoneText.textContent =
+    `Готово! Файл «${completedState.filename}» создан и добавлен в список ниже.`;
+  progressDone.classList.add('visible');
+}
+
+// Пытаемся возобновить незавершённое задание после перезагрузки
+resumePendingJob().catch(err => {
+  console.error('Не удалось возобновить задание:', err);
+  clearJobState();
+});

@@ -6,12 +6,14 @@ function initTheme() {
   document.documentElement.setAttribute('data-theme', savedTheme);
 }
 
-themeToggle.addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme') || 'light';
-  const next = current === 'light' ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-});
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+}
 
 // ===== Загрузка статистики =====
 async function loadStats() {
@@ -28,7 +30,9 @@ async function loadStats() {
 // ===== Рендер счётчиков =====
 function renderCounters(counters) {
   if (!counters) return;
+
   const animate = (el, target) => {
+    if (!el) return;
     const duration = 800;
     const start = performance.now();
     const from = parseInt(el.textContent) || 0;
@@ -42,13 +46,19 @@ function renderCounters(counters) {
 
   animate(document.getElementById('counterDocs'), counters.texts_created || 0);
   animate(document.getElementById('counterUsers'), counters.unique_visitors || 0);
-  animate(document.getElementById('counter30d'), counters.recent_30d_count || 0);
+  // Ключевая правка: читаем documents_30d с fallback на recent_30d_count
+  animate(
+    document.getElementById('counter30d'),
+    counters.documents_30d ?? counters.recent_30d_count ?? 0
+  );
   animate(document.getElementById('counterToday'), counters.today_count || 0);
 }
 
 // ===== График активности =====
 function renderActivityChart(activity) {
   const chart = document.getElementById('activityChart');
+  if (!chart) return;
+
   if (!activity || activity.length === 0) {
     chart.innerHTML = '<div class="placeholder">Нет данных</div>';
     return;
@@ -59,8 +69,8 @@ function renderActivityChart(activity) {
   chart.innerHTML = activity.map(item => {
     const height = Math.max((item.value / maxValue) * 100, item.value > 0 ? 4 : 0);
     return `
-      <div class="chart-bar" 
-           style="height: ${height}%;" 
+      <div class="chart-bar"
+           style="height: ${height}%;"
            title="${item.date}: ${item.value} документов">
         <div class="chart-bar__label">${item.value}</div>
         <div class="chart-bar__date">${item.date}</div>
@@ -72,6 +82,8 @@ function renderActivityChart(activity) {
 // ===== Список пользователей =====
 function renderUsersList(users) {
   const list = document.getElementById('usersList');
+  if (!list) return;
+
   if (!users || users.length === 0) {
     list.innerHTML = '<div class="placeholder">Пока нет данных</div>';
     return;
@@ -102,7 +114,9 @@ const toast = document.getElementById('toast');
 const toastText = document.getElementById('toastText');
 
 function showToast(message, icon = '✅') {
-  toast.querySelector('.toast__icon').textContent = icon;
+  if (!toast || !toastText) return;
+  const iconEl = toast.querySelector('.toast__icon');
+  if (iconEl) iconEl.textContent = icon;
   toastText.textContent = message;
   toast.classList.add('toast--visible');
   setTimeout(() => toast.classList.remove('toast--visible'), 3000);
@@ -111,26 +125,19 @@ function showToast(message, icon = '✅') {
 // ===== Init =====
 initTheme();
 
-(async () => {
+async function refreshStats() {
   const stats = await loadStats();
   if (!stats) {
-    document.getElementById('activityChart').innerHTML =
-      '<div class="placeholder">Не удалось загрузить данные</div>';
-    document.getElementById('usersList').innerHTML =
-      '<div class="placeholder">Не удалось загрузить данные</div>';
+    const chart = document.getElementById('activityChart');
+    const usersList = document.getElementById('usersList');
+    if (chart) chart.innerHTML = '<div class="placeholder">Не удалось загрузить данные</div>';
+    if (usersList) usersList.innerHTML = '<div class="placeholder">Не удалось загрузить данные</div>';
     return;
   }
   renderCounters(stats.counters);
   renderActivityChart(stats.activity_14d);
   renderUsersList(stats.top_users);
-})();
+}
 
-// Автообновление раз в 60 секунд
-setInterval(async () => {
-  const stats = await loadStats();
-  if (stats) {
-    renderCounters(stats.counters);
-    renderActivityChart(stats.activity_14d);
-    renderUsersList(stats.top_users);
-  }
-}, 60000);
+refreshStats();
+setInterval(refreshStats, 60000);

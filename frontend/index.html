@@ -17,19 +17,27 @@
       <path d="M3 3v18h18"></path>
       <path d="M7 14l4-4 4 4 5-5"></path>
     </svg>
-    <h1>Локальный редактор текста</h1>
+    <h1>Заполнение шаблона ИГМИ</h1>
   </div>
   <div class="header__actions">
-    <a href="/stats.html" class="btn btn--ghost btn--sm">📊 Статистика</a>
-    <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">
-      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="12" cy="12" r="4"></circle>
-        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>
-      </svg>
-      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-      </svg>
-    </button>
+<button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">
+  <!-- Луна: видна в светлой теме (чтобы переключиться на тёмную) -->
+  <svg class="theme-icon icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+  <!-- Солнце: видно в тёмной теме (чтобы переключиться на светлую) -->
+  <svg class="theme-icon icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="5"></circle>
+    <line x1="12" y1="1" x2="12" y2="3"></line>
+    <line x1="12" y1="21" x2="12" y2="23"></line>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+    <line x1="1" y1="12" x2="3" y2="12"></line>
+    <line x1="21" y1="12" x2="23" y2="12"></line>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+  </svg>
+</button>
   </div>
 </header>
 
@@ -50,12 +58,12 @@
         </div>
 
         <div class="project-field" id="projectField">
-          <label class="project-field__label" for="projectNameInput">Название проекта</label>
+          <label class="project-field__label" for="projectNameInput">Введите номер проекта</label>
           <input
             type="text"
             id="projectNameInput"
             class="project-field__input"
-            placeholder="Например: Метеостанция Хорей-Вер"
+            placeholder="Например: 1902"
             autocomplete="off"
           >
           <div class="project-field__hint">Используется как имя итогового файла. По умолчанию — имя загруженного документа, можно изменить.</div>
@@ -90,11 +98,12 @@
               <div class="progress-step__text">Генерация документа</div>
             </div>
           </div>
+        </div>
 
-          <div class="progress-done" id="progressDone">
-            <span class="progress-done__icon">✅</span>
-            <span id="progressDoneText">Готово! Файл создан и добавлен в список ниже.</span>
-          </div>
+        <div class="progress-done" id="progressDone">
+  <span class="progress-done__icon">✅</span>
+  <span id="progressDoneText">Готово! Файл создан и добавлен в список.</span>
+  <button class="progress-done__close" id="progressDoneClose" aria-label="Закрыть уведомление">&times;</button>
         </div>
 
         <div class="actions">

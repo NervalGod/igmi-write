@@ -1,13 +1,8 @@
 """
 Поток-воркер: берёт задания из очереди и выполняет их последовательно.
-
-Последовательность важна: Ollama на одном GPU с моделью 35B не тянет
-параллельные тяжёлые запросы (см. комментарий в jobs.py).
 """
 import logging
-import os
 import queue
-import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -24,11 +19,10 @@ from filler import (
 )
 from jobs import STEP_NAMES, update_job
 from parser import paragraphs_of, parse, tables_of
-from storage import add_to_history
+from storage import add_to_history, get_project_dir, register_document
 
 logger = logging.getLogger(__name__)
 
-# Глобальная очередь заданий (пополняется из server.py)
 job_queue: "queue.Queue[Dict[str, Any]]" = queue.Queue()
 
 
@@ -40,10 +34,12 @@ def _build_output_filename(project: str) -> str:
     return f"{safe}_{ts}.docx"
 
 
-def _run_job(job_id: str, source_path: str, project: str, user: str) -> None:
+def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
     """Основная логика обработки одного задания."""
     started = time.perf_counter()
-    logger.info(f"[{job_id}] Запуск задания: {project}")
+
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] ▶ Начало обработки: {project}")
+    logger.info(f"[{job_id}] Запуск задания: {project} (ip={user_ip})")
 
     try:
         cfg = load_config()
@@ -93,35 +89,31 @@ def _run_job(job_id: str, source_path: str, project: str, user: str) -> None:
         # === ШАГ 5: сохранение ===
         update_job(job_id, step=5, step_name=STEP_NAMES[5])
         output_name = _build_output_filename(project)
-        output_path = Path("output") / output_name
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        project_dir = get_project_dir(project)
+        output_path = project_dir / output_name
         template_doc.save(str(output_path))
 
-        # Успех
         elapsed = time.perf_counter() - started
-        logger.info(f"[{job_id}] Готово за {elapsed:.1f}с: {output_name}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✔ Готово за {elapsed:.1f}с: {output_path}")
 
-        update_job(
-            job_id,
-            status="done",
-            step=5,
-            step_name="Готово",
-            filename=output_name,
-        )
+        update_job(job_id, status="done", step=5, step_name="Готово", filename=output_name)
 
-        # В историю
+        # Записываем в историю
         add_to_history(
             filename=output_name,
             project=project,
-            user=user,
+            user_ip=user_ip,
             size=output_path.stat().st_size,
         )
 
+        # 🆕 Инкрементируем статические счётчики
+        register_document(user_ip)
+
     except Exception as e:
         logger.exception(f"[{job_id}] Ошибка задания")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✖ Ошибка: {e}")
         update_job(job_id, status="error", error=str(e))
     finally:
-        # Чистим исходник из uploads/
         try:
             Path(source_path).unlink(missing_ok=True)
         except Exception:
@@ -129,7 +121,6 @@ def _run_job(job_id: str, source_path: str, project: str, user: str) -> None:
 
 
 def _worker_loop() -> None:
-    """Бесконечный цикл воркера: берёт задание → выполняет → берёт следующее."""
     logger.info("Worker запущен, ожидает задания...")
     while True:
         task = job_queue.get()
@@ -138,7 +129,7 @@ def _worker_loop() -> None:
                 job_id=task["job_id"],
                 source_path=task["source_path"],
                 project=task["project"],
-                user=task.get("user", "anonymous"),
+                user_ip=task.get("user_ip", "unknown"),   # ← было user
             )
         except Exception:
             logger.exception("Необработанная ошибка в worker")
@@ -147,5 +138,4 @@ def _worker_loop() -> None:
 
 
 def start_worker() -> None:
-    """Запускает цикл воркера (блокирующая функция — запускать в отдельном потоке)."""
     _worker_loop()
