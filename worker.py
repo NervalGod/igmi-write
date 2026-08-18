@@ -1,5 +1,6 @@
 """
 Поток-воркер: берёт задания из очереди и выполняет их последовательно.
+Интегрирован с psycopg (синхронные функции для сохранения в БД).
 """
 import logging
 import queue
@@ -19,7 +20,9 @@ from filler import (
 )
 from jobs import STEP_NAMES, update_job
 from parser import paragraphs_of, parse, tables_of
-from storage import add_to_history, get_project_dir, register_document
+
+# Импорт синхронных функций для работы с БД из worker-потока
+from database import get_or_create_user_sync, add_file_sync
 
 logger = logging.getLogger(__name__)
 
@@ -27,11 +30,17 @@ job_queue: "queue.Queue[Dict[str, Any]]" = queue.Queue()
 
 
 def _build_output_filename(project: str) -> str:
-    """Формирует имя: ProjectName_YYYYMMDD_HHMMSS.docx"""
+    """Формирует имя файла: ProjectName_YYYYMMDD_HHMMSS.docx"""
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe = "".join(c if c.isalnum() or c in " _-" else "_" for c in project).strip()
     safe = safe[:80] or "project"
     return f"{safe}_{ts}.docx"
+
+
+def _get_safe_project_dir_name(project: str) -> str:
+    """Возвращает безопасное имя папки для проекта."""
+    safe = "".join(c if c.isalnum() or c in " _-" else "_" for c in project).strip()
+    return safe[:80] or "project"
 
 
 def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
@@ -44,7 +53,7 @@ def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
     try:
         cfg = load_config()
         llm_options = dict(
-            num_ctx=cfg.num_ctx,
+            num_ctx=Config.num_ctx if 'Config' in locals() else cfg.num_ctx, # fallback на cfg
             temperature=cfg.temperature,
             keep_alive=cfg.keep_alive,
             num_predict=cfg.num_predict,
@@ -86,10 +95,16 @@ def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
         )
         apply_paragraph_extraction(template_paragraphs, paragraph_results)
 
-        # === ШАГ 5: сохранение ===
+        # === ШАГ 5: сохранение файла и запись в БД ===
         update_job(job_id, step=5, step_name=STEP_NAMES[5])
+        
         output_name = _build_output_filename(project)
-        project_dir = get_project_dir(project)
+        safe_project_name = _get_safe_project_dir_name(project)
+        
+        # Создаём подпапку для проекта, если её нет
+        project_dir = Path("output") / safe_project_name
+        project_dir.mkdir(parents=True, exist_ok=True)
+        
         output_path = project_dir / output_name
         template_doc.save(str(output_path))
 
@@ -98,22 +113,35 @@ def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
 
         update_job(job_id, status="done", step=5, step_name="Готово", filename=output_name)
 
-        # Записываем в историю
-        add_to_history(
-            filename=output_name,
-            project=project,
-            user_ip=user_ip,
-            size=output_path.stat().st_size,
-        )
-
-        # 🆕 Инкрементируем статические счётчики
-        register_document(user_ip)
+        # 🆕 Запись метаданных в PostgreSQL
+        try:
+            # 1. Получаем или создаём пользователя по IP
+            user = get_or_create_user_sync(user_ip)
+            
+            # 2. Формируем относительный путь для БД (например: "Проект_А/Проект_А_20231024.docx")
+            # Это нужно, чтобы endpoint /api/download/{rel_path} мог безопасно найти файл
+            rel_path = f"{safe_project_name}/{output_name}"
+            
+            # 3. Добавляем запись о файле
+            add_file_sync(
+                user_id=str(user["id"]),
+                project=project,
+                path=rel_path,
+                size_bytes=output_path.stat().st_size,
+            )
+            logger.info(f"[{job_id}] Запись в БД успешна: user={user['id']}, path={rel_path}")
+            
+        except Exception as db_err:
+            # Если БД недоступна, файл всё равно сохранён на диске. 
+            # Мы логируем ошибку, но не прерываем задание как failed.
+            logger.error(f"[{job_id}] Ошибка записи метаданных в БД: {db_err}")
 
     except Exception as e:
-        logger.exception(f"[{job_id}] Ошибка задания")
+        logger.exception(f"[{job_id}] Критическая ошибка задания")
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ✖ Ошибка: {e}")
         update_job(job_id, status="error", error=str(e))
     finally:
+        # Всегда очищаем временный загруженный файл
         try:
             Path(source_path).unlink(missing_ok=True)
         except Exception:
@@ -129,7 +157,7 @@ def _worker_loop() -> None:
                 job_id=task["job_id"],
                 source_path=task["source_path"],
                 project=task["project"],
-                user_ip=task.get("user_ip", "unknown"),   # ← было user
+                user_ip=task.get("user_ip", "unknown"),
             )
         except Exception:
             logger.exception("Необработанная ошибка в worker")
