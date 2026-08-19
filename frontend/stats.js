@@ -1,4 +1,3 @@
-// ===== Тема =====
 const themeToggle = document.getElementById('themeToggle');
 
 function initTheme() {
@@ -15,7 +14,6 @@ if (themeToggle) {
   });
 }
 
-// ===== Загрузка статистики =====
 async function loadStats() {
   try {
     const res = await fetch('/api/stats');
@@ -27,7 +25,6 @@ async function loadStats() {
   }
 }
 
-// ===== Рендер счётчиков =====
 function renderCounters(counters) {
   if (!counters) return;
 
@@ -46,7 +43,6 @@ function renderCounters(counters) {
 
   animate(document.getElementById('counterDocs'), counters.texts_created || 0);
   animate(document.getElementById('counterUsers'), counters.unique_visitors || 0);
-  // Ключевая правка: читаем documents_30d с fallback на recent_30d_count
   animate(
     document.getElementById('counter30d'),
     counters.documents_30d ?? counters.recent_30d_count ?? 0
@@ -54,7 +50,6 @@ function renderCounters(counters) {
   animate(document.getElementById('counterToday'), counters.today_count || 0);
 }
 
-// ===== График активности =====
 function renderActivityChart(activity) {
   const chart = document.getElementById('activityChart');
   if (!chart) return;
@@ -79,7 +74,6 @@ function renderActivityChart(activity) {
   }).join('');
 }
 
-// ===== Список пользователей =====
 function renderUsersList(users) {
   const list = document.getElementById('usersList');
   if (!list) return;
@@ -109,7 +103,6 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// ===== Toast =====
 const toast = document.getElementById('toast');
 const toastText = document.getElementById('toastText');
 
@@ -122,7 +115,6 @@ function showToast(message, icon = '✅') {
   setTimeout(() => toast.classList.remove('toast--visible'), 3000);
 }
 
-// ===== Init =====
 initTheme();
 
 async function refreshStats() {

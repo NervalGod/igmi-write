@@ -1,6 +1,6 @@
 """
 Поток-воркер: берёт задания из очереди и выполняет их последовательно.
-Интегрирован с psycopg (синхронные функции для сохранения в БД).
+Интегрирован с psycopg (использует синхронные функции для сохранения в БД).
 """
 import logging
 import queue
@@ -44,7 +44,7 @@ def _get_safe_project_dir_name(project: str) -> str:
 
 
 def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
-    """Основная логика обработки одного задания."""
+    """Основная логика обработки одного задания (4 шага)."""
     started = time.perf_counter()
 
     print(f"[{datetime.now().strftime('%H:%M:%S')}] ▶ Начало обработки: {project}")
@@ -53,19 +53,18 @@ def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
     try:
         cfg = load_config()
         llm_options = dict(
-            num_ctx=Config.num_ctx if 'Config' in locals() else cfg.num_ctx, # fallback на cfg
+            num_ctx=cfg.num_ctx,
             temperature=cfg.temperature,
             keep_alive=cfg.keep_alive,
             num_predict=cfg.num_predict,
         )
 
-        # === ШАГ 1: парсинг исходника ===
+        # === ШАГ 1: Анализ документа (исходник + шаблон) ===
         update_job(job_id, status="running", step=1, step_name=STEP_NAMES[1])
+        
         source_doc = docx.Document(source_path)
         source_blocks = parse(source_doc, with_refs=False)
 
-        # === ШАГ 2: парсинг шаблона ===
-        update_job(job_id, step=2, step_name=STEP_NAMES[2])
         template_doc = docx.Document(cfg.template_path)
         template_blocks = parse(template_doc, with_refs=True)
         template_tables = tables_of(template_blocks)
@@ -73,8 +72,8 @@ def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
             p for p in paragraphs_of(template_blocks) if "<Заполнить>" in p.text
         ]
 
-        # === ШАГ 3: заполнение таблиц ===
-        update_job(job_id, step=3, step_name=STEP_NAMES[3])
+        # === ШАГ 2: Заполнение таблиц ===
+        update_job(job_id, step=2, step_name=STEP_NAMES[2])
         table_results = extract_table_values(
             source_tables=tables_of(source_blocks),
             template_tables=template_tables,
@@ -84,8 +83,8 @@ def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
         )
         apply_table_extraction(template_tables, table_results)
 
-        # === ШАГ 4: заполнение параграфов ===
-        update_job(job_id, step=4, step_name=STEP_NAMES[4])
+        # === ШАГ 3: Заполнение параграфов ===
+        update_job(job_id, step=3, step_name=STEP_NAMES[3])
         paragraph_results = extract_paragraph_values(
             source_paragraphs=paragraphs_of(source_blocks),
             targets=template_paragraphs,
@@ -95,8 +94,8 @@ def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
         )
         apply_paragraph_extraction(template_paragraphs, paragraph_results)
 
-        # === ШАГ 5: сохранение файла и запись в БД ===
-        update_job(job_id, step=5, step_name=STEP_NAMES[5])
+        # === ШАГ 4: Сохранение файла и запись в БД ===
+        update_job(job_id, step=4, step_name=STEP_NAMES[4])
         
         output_name = _build_output_filename(project)
         safe_project_name = _get_safe_project_dir_name(project)
@@ -106,20 +105,22 @@ def _run_job(job_id: str, source_path: str, project: str, user_ip: str) -> None:
         project_dir.mkdir(parents=True, exist_ok=True)
         
         output_path = project_dir / output_name
+        
+        # Синхронное сохранение (это нормально, так как воркер и так в отдельном потоке)
         template_doc.save(str(output_path))
 
         elapsed = time.perf_counter() - started
         print(f"[{datetime.now().strftime('%H:%M:%S')}] ✔ Готово за {elapsed:.1f}с: {output_path}")
 
-        update_job(job_id, status="done", step=5, step_name="Готово", filename=output_name)
+        # Статус "done" теперь привязан к 4-му шагу
+        update_job(job_id, status="done", step=4, step_name="Готово", filename=output_name)
 
-        # 🆕 Запись метаданных в PostgreSQL
+        # 🆕 Запись метаданных в PostgreSQL (СИНХРОННЫЕ вызовы)
         try:
             # 1. Получаем или создаём пользователя по IP
             user = get_or_create_user_sync(user_ip)
             
-            # 2. Формируем относительный путь для БД (например: "Проект_А/Проект_А_20231024.docx")
-            # Это нужно, чтобы endpoint /api/download/{rel_path} мог безопасно найти файл
+            # 2. Формируем относительный путь для БД
             rel_path = f"{safe_project_name}/{output_name}"
             
             # 3. Добавляем запись о файле

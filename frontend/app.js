@@ -1,4 +1,3 @@
-// ===== Переключение темы =====
 const themeToggle = document.getElementById('themeToggle');
 
 function initTheme() {
@@ -17,7 +16,6 @@ if (themeToggle) {
 
 initTheme();
 
-// ===== Элементы DOM =====
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const fileInfo = document.getElementById('fileInfo');
@@ -39,7 +37,6 @@ const recentFilesList = document.getElementById('recentFilesList');
 
 let selectedFile = null;
 
-// ===== Сохранение состояния АКТИВНОГО задания (переживает перезагрузку) =====
 const PENDING_JOB_KEY = 'igmi_pending_job';
 
 function saveJobState(jobId, projectName) {
@@ -64,7 +61,6 @@ function clearJobState() {
   localStorage.removeItem(PENDING_JOB_KEY);
 }
 
-// ===== Сохранение состояния ЗАВЕРШЁННОЙ обработки (плашка после перезагрузки) =====
 const COMPLETED_JOB_KEY = 'igmi_completed_job';
 
 function saveCompletedState(filename) {
@@ -84,7 +80,6 @@ function clearCompletedState() {
   localStorage.removeItem(COMPLETED_JOB_KEY);
 }
 
-// ===== Крестик на плашке завершения =====
 if (progressDoneClose) {
   progressDoneClose.addEventListener('click', () => {
     progressDone.classList.remove('visible');
@@ -92,7 +87,6 @@ if (progressDoneClose) {
   });
 }
 
-// ===== Валидация формы =====
 function updateProcessButtonState() {
   const hasFile = !!selectedFile;
   const hasProject = projectNameInput.value.trim().length > 0;
@@ -107,7 +101,6 @@ function updateProcessButtonState() {
 
 projectNameInput.addEventListener('input', updateProcessButtonState);
 
-// ===== Drag & Drop и выбор файла =====
 dropZone.addEventListener('click', () => fileInput.click());
 
 dropZone.addEventListener('dragover', (e) => {
@@ -164,7 +157,6 @@ function formatFileSize(bytes) {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
 }
 
-// ===== Обработка =====
 processBtn.addEventListener('click', startProcessing);
 
 async function startProcessing() {
@@ -179,7 +171,6 @@ async function startProcessing() {
     return;
   }
 
-  // Блокируем UI
   processBtn.disabled = true;
   resetBtn.disabled = true;
   btnSpinner.classList.add('spinning');
@@ -203,7 +194,6 @@ async function startProcessing() {
     }
   });
 
-  // Отправка на сервер
   const formData = new FormData();
   formData.append('file', selectedFile);
   formData.append('project', projectName);
@@ -219,7 +209,6 @@ async function startProcessing() {
     jobId = data.job_id;
     processBtnText.textContent = 'Обработка...';
 
-    // Сохраняем, чтобы пережить перезагрузку страницы
     saveJobState(jobId, projectName);
   } catch (e) {
     showToast('Ошибка отправки: ' + e.message, true);
@@ -244,7 +233,6 @@ async function pollJob(jobId, steps) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const job = await res.json();
 
-    // Обновляем визуализацию шагов
     if (job.step !== lastStep) {
       for (let i = 0; i < steps.length; i++) {
         const stepNum = i + 1;
@@ -267,7 +255,6 @@ async function pollJob(jobId, steps) {
       processBtnText.textContent = `В очереди: ${job.queue_position + 1}`;
     }
 
-    // Успешное завершение
     if (job.status === 'done') {
       steps.forEach(s => {
         s.classList.remove('active');
@@ -281,7 +268,6 @@ async function pollJob(jobId, steps) {
         `Готово! Файл «${job.filename}» создан и добавлен в список ниже.`;
       progressDone.classList.add('visible');
 
-      // Сохраняем, чтобы плашка пережила перезагрузку страницы
       saveCompletedState(job.filename);
       clearJobState();
 
@@ -289,7 +275,7 @@ async function pollJob(jobId, steps) {
 
       await refreshFilesList();
       await sleep(1800);
-      resetForm();   // сбрасываем форму, но плашку НЕ трогаем
+      resetForm();   
       return;
     }
 
@@ -306,7 +292,6 @@ function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-// Полный сброс UI (включая плашку завершения)
 function resetUI() {
   selectedFile = null;
   clearJobState();
@@ -340,7 +325,6 @@ function resetUI() {
   updateProcessButtonState();
 }
 
-// Сброс формы БЕЗ скрытия плашки завершения
 function resetForm() {
   selectedFile = null;
   clearJobState();
@@ -374,7 +358,6 @@ function resetForm() {
 
 resetBtn.addEventListener('click', resetUI);
 
-// ===== Toast-уведомления =====
 const toast = document.getElementById('toast');
 const toastIcon = document.getElementById('toastIcon');
 const toastText = document.getElementById('toastText');
@@ -388,7 +371,6 @@ function showToast(message, isError = false, icon = null) {
   setTimeout(() => toast.classList.remove('visible'), 3500);
 }
 
-// ===== Список готовых файлов =====
 const collapsedProjects = new Set();
 
 async function refreshFilesList() {
@@ -468,7 +450,6 @@ function formatDate(isoString) {
   });
 }
 
-// ===== Возобновление незавершённого задания после перезагрузки =====
 async function resumePendingJob() {
   const state = loadJobState();
   if (!state || !state.jobId) return;
@@ -477,7 +458,6 @@ async function resumePendingJob() {
   try {
     const res = await fetch(`/api/job/${state.jobId}`);
     if (!res.ok) {
-      // Сервер был перезапущен — задание потеряно (тихо очищаем)
       clearJobState();
       return;
     }
@@ -488,7 +468,6 @@ async function resumePendingJob() {
     return;
   }
 
-  // Если уже завершено или упало — очищаем
   if (job.status === 'done' || job.status === 'error') {
     clearJobState();
     if (job.status === 'done') {
@@ -497,7 +476,6 @@ async function resumePendingJob() {
     return;
   }
 
-  // Задание ещё в работе — восстанавливаем UI и продолжаем polling (без уведомлений)
   processBtn.disabled = true;
   resetBtn.disabled = true;
   resetBtn.style.display = 'inline-flex';
@@ -528,11 +506,9 @@ async function resumePendingJob() {
   }
 }
 
-// ===== Инициализация =====
 refreshFilesList();
 setInterval(refreshFilesList, 30000);
 
-// Показываем плашку завершённой обработки, если пользователь её ещё не закрыл
 const completedState = loadCompletedState();
 if (completedState && completedState.filename) {
   progressDoneText.textContent =
@@ -540,7 +516,6 @@ if (completedState && completedState.filename) {
   progressDone.classList.add('visible');
 }
 
-// Пытаемся возобновить незавершённое задание после перезагрузки
 resumePendingJob().catch(err => {
   console.error('Не удалось возобновить задание:', err);
   clearJobState();

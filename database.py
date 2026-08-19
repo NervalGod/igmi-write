@@ -1,37 +1,35 @@
 """
-Подключение к PostgreSQL через psycopg (v3) с пулом коннектов.
-Поддерживает и async, и sync режимы — sync нужен для worker.py,
-который работает в отдельном потоке.
+Подключение к PostgreSQL через psycopg с пулом коннектов.
 """
+import os
 import logging
+from pathlib import Path
 from contextlib import asynccontextmanager, contextmanager
 from typing import Any, AsyncGenerator, Generator
 
 import psycopg
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool, ConnectionPool
-from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
-class Settings(BaseSettings):
-    database_url: str = "postgresql://igmi_admin:157751@127.0.0.1:5432/igmi_db"
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-
-
-settings = Settings()
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError(f"Переменная DATABASE_URL не найдена в {env_path}")
 
 _async_pool: AsyncConnectionPool | None = None
 _sync_pool: ConnectionPool | None = None
+
 
 async def init_async_pool() -> None:
     """Создаёт асинхронный пул для FastAPI-эндпоинтов."""
     global _async_pool
     _async_pool = AsyncConnectionPool(
-        conninfo=settings.database_url,
+        conninfo=DATABASE_URL,
         min_size=2,
         max_size=10,
         open=False,
@@ -52,7 +50,7 @@ def init_sync_pool() -> None:
     """Создаёт синхронный пул для worker-потока."""
     global _sync_pool
     _sync_pool = ConnectionPool(
-        conninfo=settings.database_url,
+        conninfo=DATABASE_URL,
         min_size=1,
         max_size=5,
         open=False,
@@ -67,6 +65,7 @@ def close_sync_pool() -> None:
     if _sync_pool:
         _sync_pool.close()
         logger.info("Синхронный пул psycopg закрыт")
+
 
 # SQL-схема для инициализации БД
 INIT_SCHEMA = """
@@ -99,6 +98,7 @@ async def init_tables() -> None:
         await conn.execute(INIT_SCHEMA)
     logger.info("Таблицы БД инициализированы")
 
+
 @asynccontextmanager
 async def get_async_conn() -> AsyncGenerator[psycopg.AsyncConnection, None]:
     """Берёт async-коннект из пула."""
@@ -118,7 +118,7 @@ def get_sync_conn() -> Generator[psycopg.Connection, None, None]:
 
 
 async def get_or_create_user(user_ip: str) -> dict[str, Any]:
-    """Возвращает пользователя по IP. Если нет — создаёт."""
+    """Возвращает пользователя по IP. Если нет - создаёт."""
     async with get_async_conn() as conn:
         row = await conn.execute(
             """
@@ -174,6 +174,7 @@ async def get_files_grouped() -> list[dict]:
 async def get_stats() -> dict[str, Any]:
     """Статистика для страницы /stats.html."""
     async with get_async_conn() as conn:
+        # Основные счётчики
         total_docs = (await (await conn.execute(
             "SELECT COUNT(*) AS cnt FROM files"
         )).fetchone())["cnt"]
@@ -182,6 +183,19 @@ async def get_stats() -> dict[str, Any]:
             "SELECT COUNT(*) AS cnt FROM users"
         )).fetchone())["cnt"]
 
+        # Счётчики за сегодня и за месяц одним запросом
+        period_stats = await (await conn.execute(
+            """
+            SELECT
+                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE) AS today_count,
+                COUNT(*) FILTER (WHERE created_at >= CURRENT_DATE - INTERVAL '29 days') AS docs_30d
+            FROM files
+            """
+        )).fetchone()
+        today_count = period_stats["today_count"]
+        docs_30d = period_stats["docs_30d"]
+
+        # Топ пользователей
         top_rows = await (await conn.execute(
             """
             SELECT u.user_ip::text AS ip, COUNT(f.id) AS cnt
@@ -193,6 +207,7 @@ async def get_stats() -> dict[str, Any]:
             """
         )).fetchall()
 
+        # Активность за 14 дней
         activity_rows = await (await conn.execute(
             """
             SELECT d.day::date AS day, COUNT(f.id) AS cnt
@@ -213,8 +228,8 @@ async def get_stats() -> dict[str, Any]:
         "counters": {
             "texts_created": total_docs,
             "unique_visitors": unique_users,
-            "documents_30d": total_docs,
-            "today_count": 0,
+            "documents_30d": docs_30d,
+            "today_count": today_count,
         },
         "activity_14d": [
             {"date": r["day"].strftime("%d.%m"), "value": r["cnt"]}
@@ -224,9 +239,6 @@ async def get_stats() -> dict[str, Any]:
     }
 
 
-# ==========================================
-# SYNC-версии для worker-потока
-# ==========================================
 def get_or_create_user_sync(user_ip: str) -> dict[str, Any]:
     """Синхронная версия для worker-потока."""
     with get_sync_conn() as conn:
@@ -255,9 +267,9 @@ def add_file_sync(user_id: str, project: str, path: str, size_bytes: int) -> dic
         ).fetchone()
         return row
 
-    # В конец database.py (ASYNC версия для server.py)
+
 async def delete_file_from_db(rel_path: str) -> bool:
-    """Удаляет запись о файле из БД."""
+    """Удаляет запись о файле из БД"""
     async with get_async_conn() as conn:
         result = await conn.execute(
             "DELETE FROM files WHERE path = %s",
@@ -265,8 +277,9 @@ async def delete_file_from_db(rel_path: str) -> bool:
         )
         return result == "DELETE 1"
 
-# И SYNC версия, если вдруг понадобится в других местах
+
 def delete_file_from_db_sync(rel_path: str) -> bool:
+    """Удаляет запись о файле из БД"""
     with get_sync_conn() as conn:
         result = conn.execute(
             "DELETE FROM files WHERE path = %s",
