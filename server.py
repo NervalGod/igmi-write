@@ -19,6 +19,7 @@ from database import (
     close_async_pool,
     init_sync_pool,
     close_sync_pool,
+    init_tables, 
     get_files_grouped,
     get_stats,
     get_async_conn,  # Используем для удаления записи из БД
@@ -70,6 +71,7 @@ async def lifespan(app: FastAPI):
     # Startup
     await init_async_pool()
     init_sync_pool()
+    await init_tables()          # ← вот эта строка
     logger.info("Пулы подключений к БД инициализированы")
     yield
     # Shutdown
@@ -121,10 +123,6 @@ async def app_js():
 async def stats_js():
     return FileResponse(FRONTEND_DIR / "stats.js", media_type="application/javascript")
 
-
-# ==========================================
-# API: генерация
-# ==========================================
 @app.post("/api/generate")
 async def generate_document(
     request: Request,

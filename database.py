@@ -14,12 +14,8 @@ from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
 
-
-# ==========================================
-# Конфигурация
-# ==========================================
 class Settings(BaseSettings):
-    database_url: str = "postgresql://igmi_admin:StrongPassword123!@127.0.0.1:5432/igmi_db"
+    database_url: str = "postgresql://igmi_admin:157751@127.0.0.1:5432/igmi_db"
 
     class Config:
         env_file = ".env"
@@ -28,13 +24,8 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-
-# ==========================================
-# Пулы коннектов
-# ==========================================
 _async_pool: AsyncConnectionPool | None = None
 _sync_pool: ConnectionPool | None = None
-
 
 async def init_async_pool() -> None:
     """Создаёт асинхронный пул для FastAPI-эндпоинтов."""
@@ -77,10 +68,37 @@ def close_sync_pool() -> None:
         _sync_pool.close()
         logger.info("Синхронный пул psycopg закрыт")
 
+# SQL-схема для инициализации БД
+INIT_SCHEMA = """
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-# ==========================================
-# Контекстные менеджеры для получения коннекта
-# ==========================================
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_ip INET NOT NULL UNIQUE,
+    full_name TEXT
+);
+
+CREATE TABLE IF NOT EXISTS files (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project TEXT NOT NULL,
+    path TEXT NOT NULL UNIQUE,
+    size_bytes BIGINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_files_created_at ON files (created_at);
+CREATE INDEX IF NOT EXISTS idx_files_user_id ON files (user_id);
+CREATE INDEX IF NOT EXISTS idx_files_project ON files (project);
+"""
+
+
+async def init_tables() -> None:
+    """Создаёт таблицы, если их ещё нет. Вызывается при старте."""
+    async with get_async_conn() as conn:
+        await conn.execute(INIT_SCHEMA)
+    logger.info("Таблицы БД инициализированы")
+
 @asynccontextmanager
 async def get_async_conn() -> AsyncGenerator[psycopg.AsyncConnection, None]:
     """Берёт async-коннект из пула."""
@@ -99,9 +117,6 @@ def get_sync_conn() -> Generator[psycopg.Connection, None, None]:
         yield conn
 
 
-# ==========================================
-# Функции работы с БД (ASYNC — для эндпоинтов)
-# ==========================================
 async def get_or_create_user(user_ip: str) -> dict[str, Any]:
     """Возвращает пользователя по IP. Если нет — создаёт."""
     async with get_async_conn() as conn:
